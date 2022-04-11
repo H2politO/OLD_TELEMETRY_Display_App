@@ -36,6 +36,8 @@ import com.hoho.android.usbserial.util.HexDump;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.EnumSet;
 
@@ -290,11 +292,14 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     private void receive(byte[] data) {
         SpannableStringBuilder spn = new SpannableStringBuilder();
-        String s = new String(data);
-        spn.append("receive " + data.length + " bytes\n");
-        if(data.length > 0)
+        int trial = new BigInteger(data).intValue();
+        //int can_id = ByteBuffer.wrap(data).getInt();
+        //spn.append("receive " + data.length + " bytes\n");
+        if(data.length > 0) {
+
             //spn.append(HexDump.dumpHexString(data)).append("\n");
-            spn.append(s);
+            spn.append(String.valueOf(trial)).append("\n");
+        }
         receiveText.append(spn);
     }
 
