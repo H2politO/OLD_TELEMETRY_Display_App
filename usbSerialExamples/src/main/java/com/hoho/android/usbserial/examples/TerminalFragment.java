@@ -290,9 +290,11 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     private void receive(byte[] data) {
         SpannableStringBuilder spn = new SpannableStringBuilder();
+        String s = new String(data);
         spn.append("receive " + data.length + " bytes\n");
         if(data.length > 0)
-            spn.append(HexDump.dumpHexString(data)).append("\n");
+            //spn.append(HexDump.dumpHexString(data)).append("\n");
+            spn.append(s);
         receiveText.append(spn);
     }
 

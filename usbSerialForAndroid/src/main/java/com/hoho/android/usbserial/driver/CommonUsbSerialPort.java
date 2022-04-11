@@ -178,7 +178,7 @@ public abstract class CommonUsbSerialPort implements UsbSerialPort {
             // data loss / crashes were observed with timeout up to 200 msec
             long endTime = testConnection ? MonotonicClock.millis() + timeout : 0;
             int readMax = Math.min(dest.length, MAX_READ_SIZE);
-            nread = mConnection.bulkTransfer(mReadEndpoint, dest, readMax, timeout);
+            nread = mConnection.bulkTransfer(mReadEndpoint, dest, readMax, timeout);//TODO: check UsbRequest.queue(...) API can be used
             // Android error propagation is improvable:
             //  nread == -1 can be: timeout, connection lost, buffer to small, ???
             if(nread == -1 && testConnection && MonotonicClock.millis() < endTime)
