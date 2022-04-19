@@ -69,6 +69,7 @@ public class CircularBuffer {
 
         for(int i=0;i<4;i++)
             currentData[i]=buffer[(bufferTail+i)%size];
+        bufferTail=(bufferTail+4)%size;
         return ByteBuffer.wrap(currentData).getFloat();
     }
 
