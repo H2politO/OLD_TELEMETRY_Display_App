@@ -1,10 +1,11 @@
 package com.hoho.android.usbserial.examples;
 
-
+import java.util.concurrent.Semaphore;
 import java.nio.ByteBuffer;
 
 public class CircularBuffer {
 
+    private Semaphore sem= new Semaphore(1);
     private static int FLOAT=4;
     private static final int BOOLEAN=1;
     private int[] id;
@@ -38,19 +39,21 @@ public class CircularBuffer {
         return bufferHead == (bufferTail - 1) % size;
     }
 
-    //insert data into data buffer
-    public void insertData(byte[] data) {
+    //insert data into data buffer and corresponding id
+    public void insertData(byte[] data, int id) {
         int length = data.length;
+        try {
+            sem.acquire();
         for (int i = 0; i < length; i++)
             buffer[(bufferHead + i) % size] = data[i];
         bufferHead = (bufferHead + length) % size;
-        return;
-    }
-
-    //insert id in buffer
-    public void insertId(int id) {
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        sem.release();
         this.id[idHead] = id;
         idHead = (idHead + 1) % idSize;
+        return;
     }
 
     //return the next type of data
