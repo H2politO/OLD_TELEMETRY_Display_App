@@ -38,6 +38,8 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.EnumSet;
 
@@ -291,16 +293,26 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     }
 
     private void receive(byte[] data) {
+        // mutable string object
         SpannableStringBuilder spn = new SpannableStringBuilder();
-        int trial = new BigInteger(data).intValue();
-        //int can_id = ByteBuffer.wrap(data).getInt();
+        float trial = reverseToFloat(data);
+        //char prova = (char)data[0];
         //spn.append("receive " + data.length + " bytes\n");
         if(data.length > 0) {
-
             //spn.append(HexDump.dumpHexString(data)).append("\n");
             spn.append(String.valueOf(trial)).append("\n");
+            //spn.append(prova).append("\n");
         }
         receiveText.append(spn);
+    }
+    // function to reverse the data via serial, for proper conversion(like in the float converter)
+    private float reverseToFloat (byte[] data) {
+        for (int i = 0; i < data.length/2; i++) {
+            byte temp = data[i];
+            data[i] = data[data.length - 1 - i];
+            data[data.length - 1 - i] = temp;
+        }
+        return ByteBuffer.wrap(data).getFloat();
     }
 
     void status(String str) {
