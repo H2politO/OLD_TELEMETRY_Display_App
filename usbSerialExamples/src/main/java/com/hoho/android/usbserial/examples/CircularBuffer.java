@@ -20,7 +20,7 @@ public class CircularBuffer {
     //create the object
     public CircularBuffer(int size) {
         this.buffer = new byte[size];
-        idSize = size / 4;
+        idSize = size / 2;
         this.id = new int[idSize];
         this.size = size;
         this.bufferHead = 0;
@@ -47,36 +47,55 @@ public class CircularBuffer {
         for (int i = 0; i < length; i++)
             buffer[(bufferHead + i) % size] = data[i];
         bufferHead = (bufferHead + length) % size;
+            this.id[idHead] = id;
+            idHead = (idHead + 1) % idSize;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         sem.release();
-        this.id[idHead] = id;
-        idHead = (idHead + 1) % idSize;
         return;
     }
 
     //return the next type of data
     public int getId(){
-        int nextType=id[idTail];
-        idTail=(idTail+1)%idSize;
-        return nextType;
+        int nextType = -1;
+        try {
+            sem.acquire();
+            nextType = id[idTail];
+            idTail = (idTail + 1) % idSize;
+        }catch(InterruptedException e ) {
+            e.printStackTrace();
+        }
+        sem.release();
+            return nextType;
     }
 
     //get a floating point value
     public float getFloat(){
-        byte[] currentData=new byte[4];
-
-        for(int i=0;i<4;i++)
-            currentData[i]=buffer[(bufferTail+i)%size];
-        bufferTail=(bufferTail+4)%size;
+        byte[] currentData = new byte[4];
+        try {
+            sem.acquire();
+            for (int i = 0; i < 4; i++)
+                currentData[i] = buffer[(bufferTail + i) % size];
+            bufferTail = (bufferTail + 4) % size;
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
+        sem.release();
         return ByteBuffer.wrap(currentData).getFloat();
     }
 
     //get boolean value
     public boolean getBoolean(){
-        byte b= buffer[bufferTail];
-        bufferTail=(bufferTail+1)%size;
+        byte b = 0;
+        try {
+            sem.acquire();
+            b = buffer[bufferTail];
+            bufferTail = (bufferTail + 1) % size;
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
+        sem.release();
         return b==0;
     }
 }
