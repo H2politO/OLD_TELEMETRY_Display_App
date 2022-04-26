@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -114,8 +115,8 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
      */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.layout, container, false);
-        /*receiveText = view.findViewById(R.id.receive_text);                          // TextView performance decreases with number of spans
+        View view = inflater.inflate(R.layout.fragment_terminal, container, false);
+        receiveText = view.findViewById(R.id.receive_text);                          // TextView performance decreases with number of spans
         receiveText.setTextColor(getResources().getColor(R.color.colorRecieveText)); // set as default color to reduce number of spans
         receiveText.setMovementMethod(ScrollingMovementMethod.getInstance());
         TextView sendText = view.findViewById(R.id.send_text);
@@ -127,7 +128,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             receiveBtn.setVisibility(View.GONE);
         } else {
             receiveBtn.setOnClickListener(v -> read());
-        }*/
+        }
         return view;
     }
 
@@ -286,13 +287,20 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     private void receive(byte[] data) {
         SpannableStringBuilder spn = new SpannableStringBuilder();
-        int trial = new BigInteger(data).intValue();
-        if(data.length > 0) {
-
-            //spn.append(HexDump.dumpHexString(data)).append("\n");
-            spn.append(String.valueOf(trial)).append("\n");
+        float trial=reverseToFloat(data);
+        if(data.length>0){
+            spn.append(Float.toString(trial)).append("\n");
         }
         receiveText.append(spn);
+    }
+
+    private float reverseToFloat(byte[] data) {
+        for(int i=0;i<data.length/2;i++){
+            byte temp=data[i];
+            data[i]=data[data.length-1-i];
+            data[data.length-1-i]=temp;
+        }
+        return ByteBuffer.wrap(data).getFloat();
     }
 
     void status(String str) {
@@ -305,11 +313,11 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         private static final int refreshInterval = 200; // msec
 
         private final Runnable runnable;
-        //private final ToggleButton rtsBtn, ctsBtn, dtrBtn, dsrBtn, cdBtn, riBtn;
+        private final ToggleButton rtsBtn, ctsBtn, dtrBtn, dsrBtn, cdBtn, riBtn;
 
         ControlLines(View view) {
             runnable = this::run; // w/o explicit Runnable, a new lambda would be created on each postDelayed, which would not be found again by removeCallbacks
-/*
+
             rtsBtn = view.findViewById(R.id.controlLineRts);
             ctsBtn = view.findViewById(R.id.controlLineCts);
             dtrBtn = view.findViewById(R.id.controlLineDtr);
@@ -317,7 +325,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             cdBtn = view.findViewById(R.id.controlLineCd);
             riBtn = view.findViewById(R.id.controlLineRi);
             rtsBtn.setOnClickListener(this::toggle);
-            dtrBtn.setOnClickListener(this::toggle);*/
+            dtrBtn.setOnClickListener(this::toggle);
         }
 
         private void toggle(View v) {
@@ -328,18 +336,17 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                 return;
             }
             String ctrl = "";
-            /*try {
+            try {
                 if (btn.equals(rtsBtn)) { ctrl = "RTS"; usbSerialPort.setRTS(btn.isChecked()); }
                 if (btn.equals(dtrBtn)) { ctrl = "DTR"; usbSerialPort.setDTR(btn.isChecked()); }
             } catch (IOException e) {
                 status("set" + ctrl + "() failed: " + e.getMessage());
-            }*/
+            }
         }
 
         private void run() {
             if (!connected)
                 return;
-            /*
             try {
                 EnumSet<UsbSerialPort.ControlLine> controlLines = usbSerialPort.getControlLines();
                 rtsBtn.setChecked(controlLines.contains(UsbSerialPort.ControlLine.RTS));
@@ -351,13 +358,13 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                 mainLooper.postDelayed(runnable, refreshInterval);
             } catch (IOException e) {
                 status("getControlLines() failed: " + e.getMessage() + " -> stopped control line refresh");
-            }*/
+            }
         }
 
         void start() {
             if (!connected)
                 return;
-            /*try {
+            try {
                 EnumSet<UsbSerialPort.ControlLine> controlLines = usbSerialPort.getSupportedControlLines();
                 if (!controlLines.contains(UsbSerialPort.ControlLine.RTS)) rtsBtn.setVisibility(View.INVISIBLE);
                 if (!controlLines.contains(UsbSerialPort.ControlLine.CTS)) ctsBtn.setVisibility(View.INVISIBLE);
@@ -368,17 +375,17 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                 run();
             } catch (IOException e) {
                 Toast.makeText(getActivity(), "getSupportedControlLines() failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }*/
+            }
         }
 
         void stop() {
             mainLooper.removeCallbacks(runnable);
-            /*rtsBtn.setChecked(false);
+            rtsBtn.setChecked(false);
             ctsBtn.setChecked(false);
             dtrBtn.setChecked(false);
             dsrBtn.setChecked(false);
             cdBtn.setChecked(false);
-            riBtn.setChecked(false);*/
+            riBtn.setChecked(false);
         }
     }
 }

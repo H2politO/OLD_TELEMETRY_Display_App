@@ -3,12 +3,14 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/drawable/ic_delete_white_24dp.xml" value="0.1365" />
+        <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/drawable/ic_send_white_24dp.xml" value="0.1365" />
         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/Display.xml" value="0.36666666666666664" />
-        <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/activity_main.xml" value="0.33" />
+        <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/activity_main.xml" value="0.18" />
         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/device_list_header.xml" value="0.36666666666666664" />
         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/device_list_item.xml" value="0.36666666666666664" />
         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/fragment_terminal.xml" value="0.36666666666666664" />
-        <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/layout.xml" value="0.33611255862428346" />
+        <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/layout.xml" value="0.1" />
         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/menu/menu_devices.xml" value="0.36666666666666664" />
       </map>
     </option>
@@ -64,5 +66,12 @@
   </component>
   <component name="ProjectType">
     <option name="id" value="Android" />
+  </component>
+  <component name="VisualizationToolProject">
+    <option name="state">
+      <ProjectState>
+        <option name="scale" value="0.1" />
+      </ProjectState>
+    </option>
   </component>
 </project>
