@@ -287,14 +287,29 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     private void receive(byte[] data) {
         SpannableStringBuilder spn = new SpannableStringBuilder();
-        float trial=reverseToFloat(data);
         if(data.length>0){
-            spn.append(Float.toString(trial)).append("\n");
+            if(data.length==1) {
+                int trial = byteToInt(data);
+                spn.append(Integer.toString(trial)).append('\n');
+            }
+            else{
+                float trial = reverseToFloat(data);
+                spn.append(Float.toString(trial)).append("\n");
+            }
         }
         receiveText.append(spn);
     }
 
-    private float reverseToFloat(byte[] data) {
+    public int byteToInt(byte[] data) {
+        int val = 0;
+        int length = data.length;
+        for (int i = 0; i < length; i++) {
+            val=val<<8;
+            val=val|(data[i] & 0xFF);
+        }
+        return val;
+    }
+    public float reverseToFloat(byte[] data) {
         for(int i=0;i<data.length/2;i++){
             byte temp=data[i];
             data[i]=data[data.length-1-i];
