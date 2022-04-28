@@ -99,7 +99,7 @@
         app:layout_constraintVertical_bias="0.666" />
 
     <TextView
-        android:id="@+id/Spurghi"
+        android:id="@+id/Purge"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fontFamily="sans-serif"
@@ -116,7 +116,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/Corti"
+        android:id="@+id/Short"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="15dp"
@@ -180,7 +180,7 @@
         app:layout_constraintVertical_bias="0.833" />
 
     <TextView
-        android:id="@+id/textView6"
+        android:id="@+id/Temperature"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="15dp"
