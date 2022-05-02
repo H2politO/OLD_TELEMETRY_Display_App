@@ -1,10 +1,12 @@
 package com.hoho.android.usbserial.examples;
 
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
@@ -12,14 +14,12 @@ import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.SpannableStringBuilder;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,12 +34,13 @@ import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.EnumSet;
+import java.util.Calendar;
+import java.util.Date;
 
 public class TerminalFragment extends Fragment implements SerialInputOutputManager.Listener {
+
+    private static final int WRITE_WAIT_MILLIS = 2000;
 
     private enum UsbPermission { Unknown, Requested, Granted, Denied }
 
@@ -62,6 +63,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     private TextView SCVoltage;
     private TextView speed;
 
+    int id=0;
 
     private SerialInputOutputManager usbIoManager;
     private UsbSerialPort usbSerialPort;
@@ -103,11 +105,14 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         ((AppCompatActivity)getActivity()).getSupportActionBar().hide();
         if(usbPermission == UsbPermission.Unknown || usbPermission == UsbPermission.Granted)
             mainLooper.post(this::connect);
+        Date currentTime = Calendar.getInstance().getTime();
+        send(currentTime.toString());
     }
 
     @Override
     public void onPause() {
-        if(connected) {
+        if(!connected) {
+            Toast.makeText(getActivity(), "not able to connect", Toast.LENGTH_SHORT).show();
             status("disconnected");
             disconnect();
         }
@@ -232,7 +237,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             status("connected");
             connected = true;
         } catch (Exception e) {
-            status("connection failed: " + e.getMessage());
+            Toast.makeText(getActivity(), "not able to connect", Toast.LENGTH_SHORT).show();
             disconnect();
         }
     }
@@ -250,22 +255,82 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         usbSerialPort = null;
     }
 
-
-    private void receive(byte[] data) {
-        SpannableStringBuilder spn = new SpannableStringBuilder();
-        if(data.length>0){
-            if(data.length==1) {
-                int trial = byteToInt(data);
-                spn.append(Integer.toString(trial)).append('\n');
-            }
-            else{
-                float trial = reverseToFloat(data);
-                spn.append(Float.toString(trial)).append("\n");
-            }
+    private void send(String str) {
+        if(!connected) {
+            return;
+        }
+        try {
+            byte[] data =  str.getBytes();
+            usbSerialPort.write(data, WRITE_WAIT_MILLIS);
+        } catch (Exception e) {
+            onRunError(e);
         }
     }
 
-    public int byteToInt(byte[] data) {
+    @SuppressLint("DefaultLocale")
+    private void receive(byte[] data) {
+        if(data.length>0){
+            id = byteToInt(data[0]);
+        switch(id){
+            //spurghi->verde #00FF00
+            //corti->giallo #FFFF00
+            //motorOn->rosso #FF0000
+            //supercap->viola #FF00FF
+            //Attuazione->blu #0000FF
+            case 0x020://wheel :
+                int strategy=byteToInt(data[5]);
+                this.strategy.setText(String.format("%d",strategy));
+                if(data[4]!=0)  //motor on
+                    this.motorOn.setBackgroundColor(Color.parseColor("#FF0000"));
+                else            //motor off
+                    this.motorOn.setBackgroundColor(Color.TRANSPARENT);
+                if(data[3]!=0)  //purge on
+                    this.purge.setBackgroundColor(Color.parseColor("#00FF00"));
+                else            //purge off
+                    this.purge.setBackgroundColor(Color.TRANSPARENT);
+                if(data[2]!=0)  //powermode on
+                    this.SCVoltage.setBackgroundColor(Color.parseColor("#00FF00"));
+                else            //powermode off
+                    this.SCVoltage.setBackgroundColor(Color.TRANSPARENT);
+                if(data[1]!=0)  //short on
+                    this._short.setBackgroundColor(Color.parseColor("#FFFF00"));
+                else            //short off
+                    this._short.setBackgroundColor(Color.TRANSPARENT);
+                break;
+            case 0x010://service board: emergences
+                emergences.setBackgroundColor(Color.parseColor("#FF0000"));
+                break;
+            case 0x011://service board: speed
+                float speed=byteToFloat(data[4],data[3],data[2],data[1]);
+                this.speed.setText(String.format("%f",speed));
+                break;
+            case 0x012://service board: temperature
+                float temperature=byteToFloat(data[4],data[3],data[2],data[1]);
+                this.temperature.setText(String.format("%f",temperature));
+                break;
+            case 0x013://service board: FCVoltage
+                float FCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);
+                this.FCVoltage.setText(String.format("%f",FCVoltage));
+                break;
+            case 0x014://service board: SCVoltage
+                float SCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);
+                this.SCVoltage.setText(String.format("%s",SCVoltage));
+                break;
+            case 0x030://actuation board: FCCurrent
+                float FCCurrent=byteToFloat(data[4],data[3],data[2],data[1]);
+                this.FCCurrent.setText(String.format("%s",FCCurrent));
+                break;
+            case 0x031://actuation board: Motor Duty
+                break;
+            case 0x032://actuation board: Fan Duty
+                break;
+            default:
+                break;
+        }
+        }
+    }
+
+    public int byteToInt(byte... data) {
         int val = 0;
         int length = data.length;
         for (int i = 0; i < length; i++) {
@@ -274,12 +339,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         }
         return val;
     }
-    public float reverseToFloat(byte[] data) {
-        for(int i=0;i<data.length/2;i++){
-            byte temp=data[i];
-            data[i]=data[data.length-1-i];
-            data[data.length-1-i]=temp;
-        }
+    public float byteToFloat(byte... data) {
         return ByteBuffer.wrap(data).getFloat();
     }
 

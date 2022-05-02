@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_title">USB Serial For Android Example</string>
-    <string name="app_name">USB Serial Example</string>
+    <string name="app_name">Telelogger H2politO</string>
     <string name="devices">USB Devices</string>
+    <string name="volt">V</string>
+    <string name="Ampere">A</string>
+    <string name="FuelCell">FC:</string>
+    <string name="SuperCap">SC:</string>
+    <string name="Kmh">Km/h</string>
+    <string name="purge">S</string>
+    <string name="Short">C</string>
+    <string name="emergences">E</string>
+    <string name="MotorOn">MO</string>
+    <string name="ActuationOn">AO</string>
+    <string name="temperature">C°</string>
 </resources>
