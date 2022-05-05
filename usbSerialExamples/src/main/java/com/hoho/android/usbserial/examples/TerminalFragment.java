@@ -63,7 +63,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     private TextView SCVoltage;
     private TextView speed;
 
-    int id=0;
+    int id=10;
 
     private SerialInputOutputManager usbIoManager;
     private UsbSerialPort usbSerialPort;
@@ -92,6 +92,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         setRetainInstance(true);
+        assert getArguments() != null;
         deviceId = getArguments().getInt("device");
         portNum = getArguments().getInt("port");
         baudRate = getArguments().getInt("baud");
@@ -267,20 +268,20 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         }
     }
 
+    //spurghi->verde #00FF00
+    //corti->giallo #FFFF00
+    //motorOn->rosso #FF0000
+    //supercap->viola #FF00FF
+    //Attuazione->blu #0000FF
     @SuppressLint("DefaultLocale")
     private void receive(byte[] data) {
         if(data.length>0){
-            id = byteToInt(data[0]);
+           id = byteToInt(data[0]);
         switch(id){
-            //spurghi->verde #00FF00
-            //corti->giallo #FFFF00
-            //motorOn->rosso #FF0000
-            //supercap->viola #FF00FF
-            //Attuazione->blu #0000FF
-            case 0x020://wheel :
-                int strategy=byteToInt(data[5]);
+            case 32://wheel :
+                int strategy=byteToInt(data[1]);
                 this.strategy.setText(String.format("%d",strategy));
-                if(data[4]!=0)  //motor on
+                if(data[2]!=0)  //motor on
                     this.motorOn.setBackgroundColor(Color.parseColor("#FF0000"));
                 else            //motor off
                     this.motorOn.setBackgroundColor(Color.TRANSPARENT);
@@ -288,47 +289,50 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                     this.purge.setBackgroundColor(Color.parseColor("#00FF00"));
                 else            //purge off
                     this.purge.setBackgroundColor(Color.TRANSPARENT);
-                if(data[2]!=0)  //powermode on
+                if(data[4]!=0)  //powermode on
                     this.SCVoltage.setBackgroundColor(Color.parseColor("#00FF00"));
                 else            //powermode off
                     this.SCVoltage.setBackgroundColor(Color.TRANSPARENT);
-                if(data[1]!=0)  //short on
+                if(data[5]!=0)  //short on
                     this._short.setBackgroundColor(Color.parseColor("#FFFF00"));
                 else            //short off
                     this._short.setBackgroundColor(Color.TRANSPARENT);
                 break;
-            case 0x010://service board: emergences
-                emergences.setBackgroundColor(Color.parseColor("#FF0000"));
+            case 16://service board: emergences
+                for(int i=1;i<5;i++)
+                    if(data[i]!=0)
+                        emergences.setBackgroundColor(Color.parseColor("#FF0000"));
                 break;
-            case 0x011://service board: speed
+            case 17://service board: speed
                 float speed=byteToFloat(data[4],data[3],data[2],data[1]);
                 this.speed.setText(String.format("%f",speed));
                 break;
-            case 0x012://service board: temperature
+            case 18://service board: temperature
                 float temperature=byteToFloat(data[4],data[3],data[2],data[1]);
                 this.temperature.setText(String.format("%f",temperature));
                 break;
-            case 0x013://service board: FCVoltage
+            case 19://service board: FCVoltage
                 float FCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);
                 this.FCVoltage.setText(String.format("%f",FCVoltage));
                 break;
-            case 0x014://service board: SCVoltage
+            case 20://service board: SCVoltage
                 float SCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);
-                this.SCVoltage.setText(String.format("%s",SCVoltage));
+                this.SCVoltage.setText(String.format("%f",SCVoltage));
                 break;
-            case 0x030://actuation board: FCCurrent
+            case 48://actuation board: FCCurrent
                 float FCCurrent=byteToFloat(data[4],data[3],data[2],data[1]);
-                this.FCCurrent.setText(String.format("%s",FCCurrent));
+                this.FCCurrent.setText(String.format("%f",FCCurrent));
                 break;
-            case 0x031://actuation board: Motor Duty
+            case 49://actuation board: Motor Duty
                 break;
-            case 0x032://actuation board: Fan Duty
+            case 50://actuation board: Fan Duty
                 break;
             default:
                 break;
         }
         }
     }
+
 
     public int byteToInt(byte... data) {
         int val = 0;
