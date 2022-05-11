@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
@@ -14,6 +13,7 @@ import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -41,6 +41,7 @@ import java.util.Date;
 public class TerminalFragment extends Fragment implements SerialInputOutputManager.Listener {
 
     private static final int WRITE_WAIT_MILLIS = 2000;
+    public static final int THREAD_NUMBER= 7;
 
     private enum UsbPermission { Unknown, Requested, Granted, Denied }
 
@@ -63,7 +64,12 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     private TextView SCVoltage;
     private TextView speed;
 
-    int id=10;
+    Passer[] passers= new Passer[THREAD_NUMBER];
+
+    ReadingThread[] threads= new ReadingThread[THREAD_NUMBER];
+    int threadCounter=0;
+    Handler handler=new Handler(Looper.getMainLooper());
+
 
     private SerialInputOutputManager usbIoManager;
     private UsbSerialPort usbSerialPort;
@@ -97,6 +103,10 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         portNum = getArguments().getInt("port");
         baudRate = getArguments().getInt("baud");
         withIoManager = getArguments().getBoolean("withIoManager");
+        for(int i=0;i<THREAD_NUMBER;i++) {
+            threads[i] = new ReadingThread();
+            threads[i].start();
+        }
     }
 
     @Override
@@ -114,7 +124,6 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     public void onPause() {
         if(!connected) {
             Toast.makeText(getActivity(), "not able to connect", Toast.LENGTH_SHORT).show();
-            status("disconnected");
             disconnect();
         }
         getActivity().unregisterReceiver(broadcastReceiver);
@@ -124,6 +133,17 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     public void onStop() {
         super.onStop();
         ((AppCompatActivity)getActivity()).getSupportActionBar().show();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        for(int i=0;i<THREAD_NUMBER;i++) {
+            try {
+                threads[i].looper.quit();
+                threads[i].join();
+            } catch (InterruptedException e){}
+        }
     }
 
     /*
@@ -141,9 +161,25 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         temperature = view.findViewById(R.id.Temperature);
         strategy = view.findViewById(R.id.Strategy);
         FCVoltage = view.findViewById(R.id.FCVoltage);
-        FCCurrent = view.findViewById(R.id.CurrentFC);
+        FCCurrent = view.findViewById(R.id.FCCurrent);
         SCVoltage = view.findViewById(R.id.VoltageSC);
         speed = view.findViewById(R.id.Speed);
+        for(int i=0;i<THREAD_NUMBER;i++) {
+            passers[i] = new Passer(
+                    purge,
+                    _short,
+                    emergences,
+                    motorOn,
+                    actuationOn,
+                    temperature,
+                    strategy,
+                    FCVoltage,
+                    FCCurrent,
+                    SCVoltage,
+                    speed,
+                    handler
+            );
+        }
         return view;
     }
 
@@ -185,7 +221,6 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     @Override
     public void onRunError(Exception e) {
         mainLooper.post(() -> {
-            status("connection lost: " + e.getMessage());
             disconnect();
         });
     }
@@ -197,7 +232,6 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             if(v.getDeviceId() == deviceId)
                 device = v;
         if(device == null) {
-            status("connection failed: device not found");
             return;
         }
         UsbSerialDriver driver = UsbSerialProber.getDefaultProber().probeDevice(device);
@@ -205,11 +239,9 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             driver = CustomProber.getCustomProber().probeDevice(device);
         }
         if(driver == null) {
-            status("connection failed: no driver for device");
             return;
         }
         if(driver.getPorts().size() < portNum) {
-            status("connection failed: not enough ports at device");
             return;
         }
         usbSerialPort = driver.getPorts().get(portNum);
@@ -220,14 +252,8 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             usbManager.requestPermission(driver.getDevice(), usbPermissionIntent);
             return;
         }
-        if(usbConnection == null) {
-            if (!usbManager.hasPermission(driver.getDevice()))
-                status("connection failed: permission denied");
-            else
-                status("connection failed: open failed");
+        if(usbConnection == null)
             return;
-        }
-
         try {
             usbSerialPort.open(usbConnection);
             usbSerialPort.setParameters(baudRate, 8, 1, UsbSerialPort.PARITY_NONE);
@@ -235,7 +261,6 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                 usbIoManager = new SerialInputOutputManager(usbSerialPort, this);
                 usbIoManager.start();
             }
-            status("connected");
             connected = true;
         } catch (Exception e) {
             Toast.makeText(getActivity(), "not able to connect", Toast.LENGTH_SHORT).show();
@@ -275,79 +300,12 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     //Attuazione->blu #0000FF
     @SuppressLint("DefaultLocale")
     private void receive(byte[] data) {
-        if(data.length>0){
-           id = byteToInt(data[0]);
-        switch(id){
-            case 32://wheel :
-                int strategy=byteToInt(data[1]);
-                this.strategy.setText(String.format("%d",strategy));
-                if(data[2]!=0)  //motor on
-                    this.motorOn.setBackgroundColor(Color.parseColor("#FF0000"));
-                else            //motor off
-                    this.motorOn.setBackgroundColor(Color.TRANSPARENT);
-                if(data[3]!=0)  //purge on
-                    this.purge.setBackgroundColor(Color.parseColor("#00FF00"));
-                else            //purge off
-                    this.purge.setBackgroundColor(Color.TRANSPARENT);
-                if(data[4]!=0)  //powermode on
-                    this.SCVoltage.setBackgroundColor(Color.parseColor("#00FF00"));
-                else            //powermode off
-                    this.SCVoltage.setBackgroundColor(Color.TRANSPARENT);
-                if(data[5]!=0)  //short on
-                    this._short.setBackgroundColor(Color.parseColor("#FFFF00"));
-                else            //short off
-                    this._short.setBackgroundColor(Color.TRANSPARENT);
-                break;
-            case 16://service board: emergences
-                for(int i=1;i<5;i++)
-                    if(data[i]!=0)
-                        emergences.setBackgroundColor(Color.parseColor("#FF0000"));
-                break;
-            case 17://service board: speed
-                float speed=byteToFloat(data[4],data[3],data[2],data[1]);
-                this.speed.setText(String.format("%f",speed));
-                break;
-            case 18://service board: temperature
-                float temperature=byteToFloat(data[4],data[3],data[2],data[1]);
-                this.temperature.setText(String.format("%f",temperature));
-                break;
-            case 19://service board: FCVoltage
-                float FCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);
-                this.FCVoltage.setText(String.format("%f",FCVoltage));
-                break;
-            case 20://service board: SCVoltage
-                float SCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);
-                this.SCVoltage.setText(String.format("%f",SCVoltage));
-                break;
-            case 48://actuation board: FCCurrent
-                float FCCurrent=byteToFloat(data[4],data[3],data[2],data[1]);
-                this.FCCurrent.setText(String.format("%f",FCCurrent));
-                break;
-            case 49://actuation board: Motor Duty
-                break;
-            case 50://actuation board: Fan Duty
-                break;
-            default:
-                break;
+        if (data.length == 5 || data.length == 6 ) {
+            Message msg = Message.obtain();
+            passers[threadCounter].setData(data);
+            msg.obj = passers[threadCounter];
+            threads[threadCounter].handler.sendMessage(msg);
+            threadCounter = (threadCounter + 1) % THREAD_NUMBER;
         }
-        }
-    }
-
-
-    public int byteToInt(byte... data) {
-        int val = 0;
-        int length = data.length;
-        for (int i = 0; i < length; i++) {
-            val=val<<8;
-            val=val|(data[i] & 0xFF);
-        }
-        return val;
-    }
-    public float byteToFloat(byte... data) {
-        return ByteBuffer.wrap(data).getFloat();
-    }
-
-    void status(String str) {
-
     }
 }
