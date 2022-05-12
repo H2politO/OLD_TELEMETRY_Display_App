@@ -34,7 +34,6 @@ import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -52,17 +51,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     private final BroadcastReceiver broadcastReceiver;
     private final Handler mainLooper;
-    private TextView purge;
-    private TextView _short;
-    private TextView emergences;
-    private TextView motorOn;
-    private TextView actuationOn;
-    private TextView temperature;
-    private TextView strategy;
-    private TextView FCVoltage;
-    private TextView FCCurrent;
-    private TextView SCVoltage;
-    private TextView speed;
+
 
     Passer[] passers= new Passer[THREAD_NUMBER];
 
@@ -142,7 +131,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             try {
                 threads[i].looper.quit();
                 threads[i].join();
-            } catch (InterruptedException e){}
+            } catch (InterruptedException ignored){}
         }
     }
 
@@ -152,6 +141,18 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.layout, container, false);
+
+        TextView purge;
+        TextView _short;
+        TextView emergences;
+        TextView motorOn;
+        TextView actuationOn;
+        TextView temperature;
+        TextView strategy;
+        TextView FCVoltage;
+        TextView FCCurrent;
+        TextView SCVoltage;
+        TextView speed;
 
         purge = view.findViewById(R.id.Purge);
         _short = view.findViewById(R.id.Short);
@@ -164,6 +165,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         FCCurrent = view.findViewById(R.id.FCCurrent);
         SCVoltage = view.findViewById(R.id.VoltageSC);
         speed = view.findViewById(R.id.Speed);
+
         for(int i=0;i<THREAD_NUMBER;i++) {
             passers[i] = new Passer(
                     purge,
@@ -220,9 +222,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     @Override
     public void onRunError(Exception e) {
-        mainLooper.post(() -> {
-            disconnect();
-        });
+        mainLooper.post(this::disconnect);
     }
 
     private void connect() {

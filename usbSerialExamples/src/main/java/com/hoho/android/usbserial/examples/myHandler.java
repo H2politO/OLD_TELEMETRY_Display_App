@@ -20,7 +20,7 @@ public class myHandler extends Handler {
         switch(id){
             case 32://wheel :
                 int strategy=byteToInt(data[1]);
-                    passer.handler.post(() -> passer.strategy.setText(String.format("%d",strategy)));
+                    passer.handler.post(() -> passer.strategy.setText(String.format("ST: %d",strategy)));
                 if(data[2]!=0)  //motor on
                     passer.handler.post(() -> passer.motorOn.setBackgroundColor(Color.parseColor("#FF0000")));
                 else            //motor off
@@ -39,29 +39,35 @@ public class myHandler extends Handler {
                     passer.handler.post(() -> passer._short.setBackgroundColor(Color.TRANSPARENT));
                 break;
             case 16://service board: emergences
-                for(int i=1;i<5;i++)
-                    if(data[i]!=0)
-                        passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor("#FF0000")));
+                boolean emActive=false;
+                for(int i=1;i<5;i++) {
+                    if (data[i] != 0)
+                        emActive = true;
+                }
+                if(emActive)
+                    passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor("#FF0000")));
+                else
+                    passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.TRANSPARENT));
                 break;
             case 17://service board: speed
                 float speed=byteToFloat(data[4],data[3],data[2],data[1]);
-                passer.handler.post(() -> passer.speed.setText(String.format("%f Km/h",speed)));
+                passer.handler.post(() -> passer.speed.setText(String.format("%.2f Km/h",speed)));
                 break;
             case 18://service board: temperature
                 float temperature=byteToFloat(data[4],data[3],data[2],data[1]);
-                passer.handler.post(() -> passer.temperature.setText(String.format("%f",temperature)));
+                passer.handler.post(() -> passer.temperature.setText(String.format("%.2f C°",temperature)));
                 break;
             case 19://service board: FCVoltage
                 float FCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);
-                passer.handler.post(() -> passer.FCVoltage.setText(String.format("%f",FCVoltage)));
+                passer.handler.post(() -> passer.FCVoltage.setText(String.format("%.2f V",FCVoltage)));
                 break;
             case 20://service board: SCVoltage
                 float SCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);
-                passer.handler.post(() -> passer.SCVoltage.setText(String.format("%f",SCVoltage)));
+                passer.handler.post(() -> passer.SCVoltage.setText(String.format("%.2f V",SCVoltage)));
                 break;
             case 48://actuation board: FCCurrent
                 float FCCurrent=byteToFloat(data[4],data[3],data[2],data[1]);
-                passer.handler.post(() -> passer.FCCurrent.setText(String.format("%f",FCCurrent)));
+                passer.handler.post(() -> passer.FCCurrent.setText(String.format("%.2f A",FCCurrent)));
                 break;
             default:
                 break;

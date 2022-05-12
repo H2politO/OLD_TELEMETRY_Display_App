@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_title">Telelogger H2politO</string>
-    <string name="app_name">Telelogger H2politO</string>
+    <string name="app_title">Jarvis</string>
+    <string name="app_name">Jarvis</string>
     <string name="devices">USB Devices</string>
-    <string name="volt">V</string>
-    <string name="Ampere">A</string>
-    <string name="FuelCell">FC:</string>
-    <string name="SuperCap">SC:</string>
-    <string name="Kmh">Km/h</string>
+    <string name="FuelCell">FC:0 V</string>
+    <string name="SuperCap">SC: 0 V</string>
+    <string name="FCCurrent">0 A</string>
     <string name="purge">S</string>
+    <string name="Speed">0 Km/h</string>
     <string name="Short">C</string>
     <string name="emergences">E</string>
     <string name="MotorOn">MO</string>
     <string name="ActuationOn">AO</string>
-    <string name="temperature">C°</string>
-    <string name="st">ST:</string>
+    <string name="temperature">0 c°</string>
+    <string name="strategy">ST: 45 </string>
 </resources>
