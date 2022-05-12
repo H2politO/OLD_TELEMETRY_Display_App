@@ -5,7 +5,7 @@
 
     <!-- mipmap/ic_launcher created with Android Studio -> New -> Image Asset using @color/colorPrimary and USB clip art -->
     <application
-        android:icon="@mipmap/H2politO"
+        android:icon="@mipmap/h2polito"
         android:label="@string/app_name"
         android:theme="@style/AppTheme"
         android:hardwareAccelerated="true"
@@ -13,7 +13,7 @@
         <!-- for this simple app launchMode=singleTask and singleTop have same effect.
              If you would start another activity in the app, e.g. Android Settings
              then you should use singleTask, else a new MainActivity would be started
-             when the settings activity is currently shown -->
+             when the settings activity is currently show+n -->
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"

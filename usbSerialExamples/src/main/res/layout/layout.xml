@@ -66,6 +66,7 @@
         android:id="@+id/Separator2.2"
         android:layout_width="3dp"
         android:layout_height="0dp"
+
         android:background="#ea9c0e"
         app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
         app:layout_constraintEnd_toEndOf="parent"
@@ -176,7 +177,6 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="15dp"
-        android:text="@string/temperature"
         android:textAlignment="center"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
@@ -201,7 +201,6 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="15dp"
-        android:text="@string/FuelCell"
         android:textAlignment="center"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
@@ -216,7 +215,6 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="15dp"
-        android:text="@string/SuperCap"
         android:textAlignment="center"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
@@ -230,7 +228,6 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="15dp"
-        android:text="@string/FCCurrent"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
@@ -244,7 +241,6 @@
         android:layout_height="0dp"
         android:padding="15dp"
         android:textAlignment="center"
-        android:text="@string/Speed"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -256,15 +252,10 @@
 
     <TextView
         android:id="@+id/Strategy"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/Separator2.3"
-        app:layout_constraintTop_toBottomOf="@+id/TopRow" />
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        tools:layout_editor_absoluteX="600dp"
+        tools:layout_editor_absoluteY="140dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
