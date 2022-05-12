@@ -41,7 +41,7 @@ public class DevicesFragment extends ListFragment {
 
     private final ArrayList<ListItem> listItems = new ArrayList<>();
     private ArrayAdapter<ListItem> listAdapter;
-    private int baudRate = 9600;//TODO: check for baud rate for different devices
+    private int baudRate = 230400;//TODO: check for baud rate for different devices
     private boolean withIoManager = true;
 
     @Override

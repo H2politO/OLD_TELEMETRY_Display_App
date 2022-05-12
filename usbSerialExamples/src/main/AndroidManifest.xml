@@ -5,9 +5,10 @@
 
     <!-- mipmap/ic_launcher created with Android Studio -> New -> Image Asset using @color/colorPrimary and USB clip art -->
     <application
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/H2politO"
         android:label="@string/app_name"
         android:theme="@style/AppTheme"
+        android:hardwareAccelerated="true"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning">
         <!-- for this simple app launchMode=singleTask and singleTop have same effect.
              If you would start another activity in the app, e.g. Android Settings
