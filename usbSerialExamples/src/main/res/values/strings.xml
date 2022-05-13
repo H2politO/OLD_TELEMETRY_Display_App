@@ -14,4 +14,5 @@
     <string name="ActuationOn">AO</string>
     <string name="temperature">0 c°</string>
     <string name="strategy">ST: 45 </string>
+    <string name="st">ST:</string>
 </resources>

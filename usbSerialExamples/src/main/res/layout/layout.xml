@@ -252,10 +252,16 @@
 
     <TextView
         android:id="@+id/Strategy"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="TextView"
-        tools:layout_editor_absoluteX="600dp"
-        tools:layout_editor_absoluteY="140dp" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="15dp"
+        android:text="@string/st"
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/Separator2.3"
+        app:layout_constraintTop_toBottomOf="@+id/TopRow" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
