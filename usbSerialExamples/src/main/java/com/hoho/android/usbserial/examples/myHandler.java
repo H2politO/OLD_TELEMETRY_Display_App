@@ -17,19 +17,44 @@ public class myHandler extends Handler {
         Passer passer= (Passer) msg.obj;
         byte[] data= passer.data;
         int id = byteToInt(data[0]);
-        passer.handler.post(() -> passer.FCCurrent.setText(String.format("%d",id)));
         switch(id){
             case 16://service board: emergences
                 boolean emActive=false;
+                String emString="";
+                boolean h2Emergency=false;
                 for(int i=1;i<5;i++) {
-                    if (data[i] != 0)
+                    if (data[i] != 0){
+                        switch (i){
+                            case 1:
+                                emString+="H2 ";
+                                h2Emergency=true;
+                                break;
+                            case 2:
+                                emString+="Deadman ";
+                                break;
+                            case 3:
+                                emString+="External ";
+                                break;
+                            case 4:
+                                emString+="Internal";
+                                break;
+                        }
+                    }
                         emActive = true;
                 }
-                if(emActive)
-                    passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor("#FF0000")));
-                else
+                if(emActive) {
+                    String finalEm_string = emString;
+                    passer.handler.post(() -> passer.emergences.setText(finalEm_string));
+                    if(h2Emergency)
+                        passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor("#0000FF")));
+                    else
+                        passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor("#FF0000")));
+                }
+                else {
+                    passer.handler.post(() -> passer.emergences.setText("E"));
                     passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.TRANSPARENT));
-                break;
+                }
+                    break;
             case 17://service board: speed
                 float speed=byteToFloat(data[4],data[3],data[2],data[1]);
                 passer.handler.post(() -> passer.speed.setText(String.format("%.2f Km/h",speed)));
