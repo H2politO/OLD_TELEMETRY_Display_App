@@ -42,6 +42,9 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     private static final int WRITE_WAIT_MILLIS = 2000;
     public static final int THREAD_NUMBER= 7;
 
+    public static final String SERVERURI="ciao";
+    public static final String CLIENTID="ciao";
+
     private enum UsbPermission { Unknown, Requested, Granted, Denied }
 
     private static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + ".GRANT_USB";

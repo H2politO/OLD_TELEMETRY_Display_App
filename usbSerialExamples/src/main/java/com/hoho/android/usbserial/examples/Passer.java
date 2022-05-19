@@ -1,7 +1,11 @@
 package com.hoho.android.usbserial.examples;
 
+import android.content.Context;
 import android.os.Handler;
 import android.widget.TextView;
+
+import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Passer {
     public byte[] data;
@@ -17,6 +21,7 @@ public class Passer {
     public TextView SCVoltage;
     public TextView speed;
     public Handler handler;
+    //public MqttAndroidClient MQTTClient;
 
     public Passer(TextView purge,
                   TextView _short,
@@ -29,7 +34,9 @@ public class Passer {
                   TextView FCCurrent,
                   TextView SCVoltage,
                   TextView speed,
-                  Handler handler) {
+                  Handler handler)
+    {
+
         this.purge = purge;
         this._short = _short;
         this.emergences = emergences;
@@ -42,6 +49,7 @@ public class Passer {
         this.SCVoltage = SCVoltage;
         this.speed = speed;
         this.handler= handler;
+
     }
 
     public void setData(byte[] data) {
