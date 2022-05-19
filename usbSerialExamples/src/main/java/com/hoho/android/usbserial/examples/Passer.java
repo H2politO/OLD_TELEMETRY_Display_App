@@ -9,47 +9,53 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Passer {
     public byte[] data;
-    public TextView purge;
-    public TextView _short;
-    public TextView emergences;
-    public TextView motorOn;
-    public TextView actuationOn;
-    public TextView temperature;
-    public TextView strategy;
-    public TextView FCVoltage;
-    public TextView FCCurrent;
-    public TextView SCVoltage;
-    public TextView speed;
+    TextView TPS;
+    TextView oilTemp;
+    TextView lambda;
+    TextView speed;
+    TextView RPM;
+    TextView SOS;
+    TextView lowBeam;
+    TextView highBeam;
+    TextView injection;
+    TextView timer;
+    TextView rightArrow;
+    TextView leftArrow;
+    TextView batteryVoltage;
     public Handler handler;
     //public MqttAndroidClient MQTTClient;
 
-    public Passer(TextView purge,
-                  TextView _short,
-                  TextView emergences,
-                  TextView motorOn,
-                  TextView actuationOn,
-                  TextView temperature,
-                  TextView strategy,
-                  TextView FCVoltage,
-                  TextView FCCurrent,
-                  TextView SCVoltage,
+
+    public Passer(TextView TPS,
+                  TextView oilTemp,
+                  TextView lambda,
                   TextView speed,
-                  Handler handler)
-    {
+                  TextView RPM,
+                  TextView SOS,
+                  TextView lowBeam,
+                  TextView highBeam,
+                  TextView injection,
+                  TextView timer,
+                  TextView rightArrow,
+                  TextView leftArrow,
+                  TextView batteryVoltage,
+                  Handler handler) {
 
-        this.purge = purge;
-        this._short = _short;
-        this.emergences = emergences;
-        this.motorOn = motorOn;
-        this.actuationOn = actuationOn;
-        this.temperature = temperature;
-        this.strategy = strategy;
-        this.FCVoltage = FCVoltage;
-        this.FCCurrent = FCCurrent;
-        this.SCVoltage = SCVoltage;
+
+        this.TPS = TPS;
+        this.oilTemp = oilTemp;
+        this.lambda = lambda;
         this.speed = speed;
-        this.handler= handler;
-
+        this.RPM = RPM;
+        this.SOS = SOS;
+        this.lowBeam = lowBeam;
+        this.highBeam = highBeam;
+        this.injection = injection;
+        this.timer = timer;
+        this.rightArrow = rightArrow;
+        this.leftArrow = leftArrow;
+        this.batteryVoltage = batteryVoltage;
+        this.handler = handler;
     }
 
     public void setData(byte[] data) {

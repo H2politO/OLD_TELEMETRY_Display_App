@@ -145,43 +145,51 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.layout, container, false);
 
-        TextView purge;
-        TextView _short;
-        TextView emergences;
-        TextView motorOn;
-        TextView actuationOn;
-        TextView temperature;
-        TextView strategy;
-        TextView FCVoltage;
-        TextView FCCurrent;
-        TextView SCVoltage;
-        TextView speed;
+        TextView TPS;
+        TextView OilTemp;
+        TextView Lambda;
+        TextView Speed;
+        TextView RPM;
+        TextView SOS;
+        TextView lowBeam;
+        TextView highBeam;
+        TextView injection;
+        TextView timer;
+        TextView rightArrow;
+        TextView leftArrow;
+        TextView batteryVoltage;
 
-        purge = view.findViewById(R.id.Purge);
-        _short = view.findViewById(R.id.Short);
-        emergences = view.findViewById(R.id.Emergences);
-        motorOn = view.findViewById(R.id.MotorOn);
-        actuationOn = view.findViewById(R.id.ActuationOn);
-        temperature = view.findViewById(R.id.Temperature);
-        strategy = view.findViewById(R.id.Strategy);
-        FCVoltage = view.findViewById(R.id.FCVoltage);
-        FCCurrent = view.findViewById(R.id.FCCurrent);
-        SCVoltage = view.findViewById(R.id.VoltageSC);
-        speed = view.findViewById(R.id.Speed);
+
+        TPS = view.findViewById(R.id.TPS);
+        OilTemp = view.findViewById(R.id.OilTemp);
+        Lambda = view.findViewById(R.id.Lambda);
+        Speed = view.findViewById(R.id.Speed);
+        RPM = view.findViewById(R.id.RPM);
+        SOS = view.findViewById(R.id.SOS);
+        lowBeam = view.findViewById(R.id.LowBeam);
+        highBeam = view.findViewById(R.id.HighBeam);
+        injection = view.findViewById(R.id.injection);
+        timer = view.findViewById(R.id.Timer);
+        rightArrow = view.findViewById(R.id.RightArrow);
+        leftArrow = view.findViewById(R.id.LeftArrow);
+        batteryVoltage= view.findViewById(R.id.BatteryVoltage);
+
 
         for(int i=0;i<THREAD_NUMBER;i++) {
             passers[i] = new Passer(
-                    purge,
-                    _short,
-                    emergences,
-                    motorOn,
-                    actuationOn,
-                    temperature,
-                    strategy,
-                    FCVoltage,
-                    FCCurrent,
-                    SCVoltage,
-                    speed,
+                    TPS,
+                    OilTemp,
+                    Lambda,
+                    Speed,
+                    RPM,
+                    SOS,
+                    lowBeam,
+                    highBeam,
+                    injection,
+                    timer,
+                    rightArrow,
+                    leftArrow,
+                    batteryVoltage,
                     handler
             );
         }

@@ -2,12 +2,39 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/Sp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
     tools:context=".MainActivity"
     tools:layout_editor_absoluteX="224dp"
     tools:layout_editor_absoluteY="2dp">
+
+    <View
+        android:id="@+id/separator4.1"
+        android:layout_width="3dp"
+        android:layout_height="0dp"
+        android:background="#ea9c0e"
+
+        app:layout_constraintBottom_toBottomOf="@+id/view7"
+        app:layout_constraintEnd_toStartOf="@+id/view7"
+        app:layout_constraintHorizontal_bias="0.736"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/BottomRow"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <View
+        android:id="@+id/separator4.2"
+        android:layout_width="3dp"
+        android:layout_height="0dp"
+        android:background="#ea9c0e"
+
+        app:layout_constraintBottom_toBottomOf="@+id/view7"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.263"
+        app:layout_constraintStart_toEndOf="@+id/view7"
+        app:layout_constraintTop_toBottomOf="@+id/BottomRow"
+        app:layout_constraintVertical_bias="0.0" />
 
     <View
         android:id="@+id/TopRow"
@@ -26,7 +53,8 @@
         android:background="#ea9c0e"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.691" />
 
     <View
         android:id="@+id/BottomRow"
@@ -35,8 +63,10 @@
         android:background="#ea9c0e"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow"
+        app:layout_constraintVertical_bias="0.39" />
 
     <View
         android:id="@+id/Separator1.1"
@@ -50,19 +80,6 @@
         app:layout_constraintVertical_bias="0.0" />
 
     <View
-        android:id="@+id/Separator2.1"
-        android:layout_width="3dp"
-        android:layout_height="0dp"
-
-        android:background="#ea9c0e"
-        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.219"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/TopRow"
-        app:layout_constraintVertical_bias="0.0" />
-
-    <View
         android:id="@+id/Separator2.2"
         android:layout_width="3dp"
         android:layout_height="0dp"
@@ -70,22 +87,47 @@
         android:background="#ea9c0e"
         app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.45"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/TopRow"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <View
+        android:id="@+id/separator3.1"
+        android:layout_width="3dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="52dp"
+
+        android:background="#ea9c0e"
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
+        app:layout_constraintEnd_toStartOf="@+id/separator3.2"
+        app:layout_constraintHorizontal_bias="0.341"
+        app:layout_constraintStart_toEndOf="@+id/view7"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow"
         app:layout_constraintVertical_bias="0.0" />
 
     <View
-        android:id="@+id/Separator2.3"
+        android:id="@+id/separator3.2"
         android:layout_width="3dp"
         android:layout_height="0dp"
         android:background="#ea9c0e"
-        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
+
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.733"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/TopRow"
+        app:layout_constraintStart_toEndOf="@+id/view7"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow"
         app:layout_constraintVertical_bias="0.0" />
+
+    <View
+        android:id="@+id/separator3.3"
+        android:layout_width="3dp"
+        android:layout_height="0dp"
+        android:background="#ea9c0e"
+
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/separator3.2"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow"
+        app:layout_constraintVertical_bias="1.0" />
 
     <View
         android:id="@+id/Separator1.2"
@@ -94,96 +136,9 @@
         android:background="#ea9c0e"
         app:layout_constraintBottom_toTopOf="@+id/TopRow"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.666"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.666" />
-
-    <TextView
-        android:id="@+id/Purge"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:fontFamily="sans-serif"
-        android:padding="15dp"
-        android:text="@string/purge"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toTopOf="@+id/TopRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/Separator1.1"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/Short"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:text="@string/Short"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toTopOf="@+id/TopRow"
-        app:layout_constraintEnd_toStartOf="@+id/Separator1.2"
-        app:layout_constraintStart_toEndOf="@+id/Separator1.1"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/Emergences"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:text="@string/emergences"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toBottomOf="@+id/Separator1.2"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/Separator1.2"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/MotorOn"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:text="@string/MotorOn"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
-        app:layout_constraintEnd_toStartOf="@+id/Separator2.1"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/TopRow" />
-
-    <TextView
-        android:id="@+id/ActuationOn"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:text="@string/ActuationOn"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
-        app:layout_constraintEnd_toStartOf="@+id/Separator2.2"
-        app:layout_constraintStart_toEndOf="@+id/Separator2.1"
-        app:layout_constraintTop_toBottomOf="@+id/TopRow"
-        app:layout_constraintVertical_bias="0.833" />
-
-    <TextView
-        android:id="@+id/Temperature"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
-        app:layout_constraintEnd_toStartOf="@+id/Separator2.3"
-        app:layout_constraintStart_toEndOf="@+id/Separator2.2"
-        app:layout_constraintTop_toBottomOf="@+id/TopRow"
         app:layout_constraintVertical_bias="0.0" />
 
     <View
@@ -194,74 +149,174 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow"
+        app:layout_constraintVertical_bias="1.0" />
 
     <TextView
-        android:id="@+id/FCVoltage"
+        android:id="@+id/TPS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TPS: 0.0"
+        android:textAlignment="center"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toTopOf="@+id/TopRow"
+        app:layout_constraintEnd_toStartOf="@+id/Separator1.1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/OilTemp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=" OIL: 0.0"
+        android:textAlignment="center"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toTopOf="@+id/TopRow"
+        app:layout_constraintEnd_toStartOf="@+id/Separator1.2"
+        app:layout_constraintStart_toEndOf="@+id/Separator1.1"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/Lambda"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="L: 0.0"
+        android:textAlignment="center"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toTopOf="@+id/TopRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.488"
+        app:layout_constraintStart_toEndOf="@+id/Separator1.2"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.506" />
+
+    <TextView
+        android:id="@+id/Speed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="50 Km/h"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
+        app:layout_constraintEnd_toStartOf="@+id/Separator2.2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/TopRow" />
+
+    <TextView
+        android:id="@+id/RPM"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=" 1523  RPM"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/Separator2.2"
+        app:layout_constraintTop_toBottomOf="@+id/TopRow"
+        app:layout_constraintVertical_bias="0.504" />
+
+    <TextView
+        android:id="@+id/SOS"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:padding="15dp"
+        android:paddingStart="150dp"
+        android:text="SOS"
         android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
+        android:textSize="34sp"
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
         app:layout_constraintEnd_toStartOf="@+id/view7"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/view7"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
 
     <TextView
-        android:id="@+id/VoltageSC"
+        android:id="@+id/HighBeam"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:padding="15dp"
+        android:paddingStart="25dp"
+        android:text="AB"
+        android:textSize="34sp"
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
+        app:layout_constraintEnd_toStartOf="@+id/separator3.1"
+        app:layout_constraintStart_toEndOf="@+id/view7"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
+
+    <TextView
+        android:id="@+id/LowBeam"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingStart="20dp"
+        android:text="AN"
+        android:textSize="34sp"
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
+        app:layout_constraintEnd_toStartOf="@+id/separator3.2"
+        app:layout_constraintStart_toEndOf="@+id/separator3.1"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
+
+    <TextView
+        android:id="@+id/injection"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingStart="25dp"
+        android:text="0"
         android:textAlignment="center"
-        android:textColor="#FFFFFF"
+        android:textSize="34sp"
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
+        app:layout_constraintEnd_toStartOf="@+id/separator3.3"
+        app:layout_constraintStart_toEndOf="@+id/separator3.2"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
+
+    <TextView
+        android:id="@+id/NS"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingStart="20dp"
+        android:text="NS"
+        android:textSize="34sp"
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/separator3.3"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
+
+    <TextView
+        android:id="@+id/Timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 : 0 : 0"
         android:textSize="48sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/view7"
+        app:layout_constraintBottom_toBottomOf="@+id/view7"
+        app:layout_constraintEnd_toStartOf="@+id/separator4.1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/BottomRow" />
 
     <TextView
-        android:id="@+id/FCCurrent"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:textColor="#FFFFFF"
+        android:id="@+id/LeftArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="<-"
         android:textSize="48sp"
-        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/view7"
-        app:layout_constraintTop_toTopOf="@+id/view7" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/view7"
+        app:layout_constraintStart_toEndOf="@+id/separator4.1"
+        app:layout_constraintTop_toBottomOf="@+id/BottomRow" />
 
     <TextView
-        android:id="@+id/Speed"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
+        android:id="@+id/RightArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="->"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/separator4.2"
+        app:layout_constraintStart_toEndOf="@+id/view7"
+        app:layout_constraintTop_toBottomOf="@+id/BottomRow" />
+
+    <TextView
+        android:id="@+id/BatteryVoltage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="10 V"
         android:textSize="48sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toEndOf="@+id/view7"
-        app:layout_constraintTop_toBottomOf="@+id/BottomRow"
-        app:layout_constraintVertical_bias="0.0" />
-
-    <TextView
-        android:id="@+id/Strategy"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:padding="15dp"
-        android:text="@string/st"
-        android:textAlignment="center"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/Separator2.3"
-        app:layout_constraintTop_toBottomOf="@+id/TopRow" />
+        app:layout_constraintStart_toEndOf="@+id/separator4.2"
+        app:layout_constraintTop_toBottomOf="@+id/BottomRow" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
