@@ -21,7 +21,7 @@ public class Passer {
     public TextView SCVoltage;
     public TextView speed;
     public Handler handler;
-    //public MqttAndroidClient MQTTClient;
+    public MqttAndroidClient MQTTClient;
 
     public Passer(TextView purge,
                   TextView _short,
@@ -34,7 +34,8 @@ public class Passer {
                   TextView FCCurrent,
                   TextView SCVoltage,
                   TextView speed,
-                  Handler handler)
+                  Handler handler,
+                  MqttAndroidClient MQTTClient)
     {
 
         this.purge = purge;
@@ -49,7 +50,7 @@ public class Passer {
         this.SCVoltage = SCVoltage;
         this.speed = speed;
         this.handler= handler;
-
+        this.MQTTClient=MQTTClient;
     }
 
     public void setData(byte[] data) {

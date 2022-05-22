@@ -33,6 +33,10 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
+import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
@@ -44,6 +48,9 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     public static final String SERVERURI="ciao";
     public static final String CLIENTID="ciao";
+    private static final String PASSWORD = "password";
+    private static final String USERNAME = "DisplayIdra";
+
 
     private enum UsbPermission { Unknown, Requested, Granted, Denied }
 
@@ -62,6 +69,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     int threadCounter=0;
     Handler handler=new Handler(Looper.getMainLooper());
 
+    private MqttAndroidClient MQTTClient;
 
     private SerialInputOutputManager usbIoManager;
     private UsbSerialPort usbSerialPort;
@@ -156,6 +164,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         TextView FCCurrent;
         TextView SCVoltage;
         TextView speed;
+        MqttConnectOptions MQTTOptions= new MqttConnectOptions();
 
         purge = view.findViewById(R.id.Purge);
         _short = view.findViewById(R.id.Short);
@@ -168,6 +177,15 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         FCCurrent = view.findViewById(R.id.FCCurrent);
         SCVoltage = view.findViewById(R.id.VoltageSC);
         speed = view.findViewById(R.id.Speed);
+
+        try {
+            MQTTClient=new MqttAndroidClient(this.getContext(),SERVERURI,CLIENTID);
+            MQTTOptions.setUserName(USERNAME);
+            MQTTOptions.setPassword(PASSWORD.toCharArray());
+            MQTTClient.connect(MQTTOptions);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
 
         for(int i=0;i<THREAD_NUMBER;i++) {
             passers[i] = new Passer(
@@ -182,7 +200,8 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                     FCCurrent,
                     SCVoltage,
                     speed,
-                    handler
+                    handler,
+                    MQTTClient
             );
         }
         return view;
