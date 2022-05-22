@@ -174,17 +174,18 @@
 
     <TextView
         android:id="@+id/Temperature"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:padding="15dp"
         android:textAlignment="center"
         android:textColor="#FFFFFF"
+        android:text="@string/temperature"
         android:textSize="48sp"
         app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
         app:layout_constraintEnd_toStartOf="@+id/Separator2.3"
         app:layout_constraintStart_toEndOf="@+id/Separator2.2"
         app:layout_constraintTop_toBottomOf="@+id/TopRow"
-        app:layout_constraintVertical_bias="0.0" />
+        />
 
     <View
         android:id="@+id/view7"
@@ -198,24 +199,25 @@
 
     <TextView
         android:id="@+id/FCVoltage"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:padding="15dp"
+        android:text="@string/FuelCell"
         android:textAlignment="center"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
         app:layout_constraintEnd_toStartOf="@+id/view7"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/view7"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintTop_toTopOf="@+id/view7" />
 
     <TextView
         android:id="@+id/VoltageSC"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:padding="15dp"
         android:textAlignment="center"
+        android:text="@string/SuperCap"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -225,9 +227,10 @@
 
     <TextView
         android:id="@+id/FCCurrent"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:padding="15dp"
+        android:text="@string/FCCurrent"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
@@ -237,23 +240,23 @@
 
     <TextView
         android:id="@+id/Speed"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:padding="15dp"
+        android:text="@string/Speed"
         android:textAlignment="center"
         android:textColor="#FFFFFF"
         android:textSize="48sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/view7"
         app:layout_constraintTop_toBottomOf="@+id/BottomRow"
-        app:layout_constraintVertical_bias="0.0" />
+        />
 
     <TextView
         android:id="@+id/Strategy"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:padding="15dp"
         android:text="@string/st"
         android:textAlignment="center"
@@ -261,7 +264,9 @@
         android:textSize="48sp"
         app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
         app:layout_constraintEnd_toEndOf="parent"
+
         app:layout_constraintStart_toEndOf="@+id/Separator2.3"
-        app:layout_constraintTop_toBottomOf="@+id/TopRow" />
+        app:layout_constraintTop_toBottomOf="@+id/TopRow"
+         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
