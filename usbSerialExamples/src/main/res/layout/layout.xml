@@ -106,11 +106,21 @@
         app:layout_constraintVertical_bias="0.0" />
 
     <View
+        android:id="@+id/separator3.4"
+        android:layout_width="3dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="96dp"
+        android:background="#ea9c0e"
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
+        app:layout_constraintEnd_toStartOf="@+id/HighBeam"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <View
         android:id="@+id/separator3.2"
         android:layout_width="3dp"
         android:layout_height="0dp"
         android:background="#ea9c0e"
-
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/view7"
@@ -122,7 +132,6 @@
         android:layout_width="3dp"
         android:layout_height="0dp"
         android:background="#ea9c0e"
-
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/separator3.2"
@@ -177,6 +186,17 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/LambdaBackground"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/TopRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.488"
+        app:layout_constraintStart_toEndOf="@+id/Separator1.2"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.506" />
+
+    <TextView
         android:id="@+id/Lambda"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -202,6 +222,17 @@
         app:layout_constraintTop_toBottomOf="@+id/TopRow" />
 
     <TextView
+        android:id="@+id/RPMBackground"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toTopOf="@+id/MiddleRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/Separator2.2"
+        app:layout_constraintTop_toBottomOf="@+id/TopRow"
+        />
+
+    <TextView
         android:id="@+id/RPM"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -211,7 +242,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/Separator2.2"
         app:layout_constraintTop_toBottomOf="@+id/TopRow"
-        app:layout_constraintVertical_bias="0.504" />
+        />
 
     <TextView
         android:id="@+id/SOS"
@@ -221,7 +252,7 @@
         android:textAlignment="center"
         android:textSize="34sp"
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
-        app:layout_constraintEnd_toStartOf="@+id/view7"
+        app:layout_constraintEnd_toStartOf="@+id/separator3.4"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
 
@@ -250,11 +281,10 @@
         app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
 
     <TextView
-        android:id="@+id/injection"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:paddingStart="25dp"
-        android:text="0"
+        android:id="@+id/syncState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="360"
         android:textAlignment="center"
         android:textSize="34sp"
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
@@ -263,16 +293,19 @@
         app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
 
     <TextView
-        android:id="@+id/NS"
+        android:id="@+id/engineEnable"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:paddingStart="20dp"
-        android:text="NS"
+        android:text="EE"
         android:textSize="34sp"
+        android:background="#ad0c14"
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/separator3.3"
-        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/Timer"
@@ -287,9 +320,10 @@
 
     <TextView
         android:id="@+id/LeftArrow"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="<-"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingStart="22dp"
+        android:text="sx"
         android:textSize="48sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/view7"
@@ -298,9 +332,10 @@
 
     <TextView
         android:id="@+id/RightArrow"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="->"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingStart="20dp"
+        android:text="dx"
         android:textSize="48sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/separator4.2"
@@ -317,5 +352,14 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/separator4.2"
         app:layout_constraintTop_toBottomOf="@+id/BottomRow" />
+
+    <TextView
+        android:id="@+id/limpMode"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/BottomRow"
+        app:layout_constraintEnd_toStartOf="@+id/Separator2.2"
+        app:layout_constraintStart_toEndOf="@+id/separator3.4"
+        app:layout_constraintTop_toBottomOf="@+id/MiddleRow" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

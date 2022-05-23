@@ -33,6 +33,8 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
+import org.w3c.dom.Text;
+
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
@@ -40,7 +42,7 @@ import java.util.Date;
 public class TerminalFragment extends Fragment implements SerialInputOutputManager.Listener {
 
     private static final int WRITE_WAIT_MILLIS = 2000;
-    public static final int THREAD_NUMBER= 7;
+    public static final int THREAD_NUMBER= 14;
 
     public static final String SERVERURI="ciao";
     public static final String CLIENTID="ciao";
@@ -145,51 +147,43 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.layout, container, false);
 
-        TextView TPS;
-        TextView OilTemp;
-        TextView Lambda;
-        TextView Speed;
-        TextView RPM;
-        TextView SOS;
-        TextView lowBeam;
-        TextView highBeam;
-        TextView injection;
-        TextView timer;
-        TextView rightArrow;
-        TextView leftArrow;
-        TextView batteryVoltage;
-
-
-        TPS = view.findViewById(R.id.TPS);
-        OilTemp = view.findViewById(R.id.OilTemp);
-        Lambda = view.findViewById(R.id.Lambda);
-        Speed = view.findViewById(R.id.Speed);
-        RPM = view.findViewById(R.id.RPM);
-        SOS = view.findViewById(R.id.SOS);
-        lowBeam = view.findViewById(R.id.LowBeam);
-        highBeam = view.findViewById(R.id.HighBeam);
-        injection = view.findViewById(R.id.injection);
-        timer = view.findViewById(R.id.Timer);
-        rightArrow = view.findViewById(R.id.RightArrow);
-        leftArrow = view.findViewById(R.id.LeftArrow);
-        batteryVoltage= view.findViewById(R.id.BatteryVoltage);
-
+        TextView TPS = view.findViewById(R.id.TPS);
+        TextView OilTemp = view.findViewById(R.id.OilTemp);
+        TextView Lambda = view.findViewById(R.id.Lambda);
+        TextView lambdaBackground= view.findViewById(R.id.LambdaBackground);
+        TextView Speed = view.findViewById(R.id.Speed);
+        TextView RPM = view.findViewById(R.id.RPM);
+        TextView RPMBackground= view.findViewById(R.id.RPMBackground);
+        TextView SOS = view.findViewById(R.id.SOS);
+        TextView lowBeam = view.findViewById(R.id.LowBeam);
+        TextView highBeam = view.findViewById(R.id.HighBeam);
+        TextView syncState = view.findViewById(R.id.syncState);
+        TextView timer = view.findViewById(R.id.Timer);
+        TextView rightArrow = view.findViewById(R.id.RightArrow);
+        TextView leftArrow = view.findViewById(R.id.LeftArrow);
+        TextView batteryVoltage= view.findViewById(R.id.BatteryVoltage);
+        TextView engineEnable = view.findViewById(R.id.engineEnable);
+        TextView limpMode = view.findViewById(R.id.limpMode);
 
         for(int i=0;i<THREAD_NUMBER;i++) {
             passers[i] = new Passer(
                     TPS,
                     OilTemp,
                     Lambda,
+                    lambdaBackground,
                     Speed,
                     RPM,
+                    RPMBackground,
                     SOS,
                     lowBeam,
                     highBeam,
-                    injection,
+                    syncState,
                     timer,
                     rightArrow,
                     leftArrow,
                     batteryVoltage,
+                    engineEnable,
+                    limpMode,
                     handler
             );
         }
@@ -311,7 +305,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     //Attuazione->blu #0000FF
     @SuppressLint("DefaultLocale")
     private void receive(byte[] data) {
-        if (data.length == 5 || data.length == 6 ) {
+        if (data.length > 0 ) {
             Message msg = Message.obtain();
             passers[threadCounter].setData(data);
             msg.obj = passers[threadCounter];

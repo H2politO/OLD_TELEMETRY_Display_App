@@ -1,11 +1,7 @@
 package com.hoho.android.usbserial.examples;
 
-import android.content.Context;
 import android.os.Handler;
 import android.widget.TextView;
-
-import org.eclipse.paho.android.service.MqttAndroidClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Passer {
     public byte[] data;
@@ -17,11 +13,15 @@ public class Passer {
     TextView SOS;
     TextView lowBeam;
     TextView highBeam;
-    TextView injection;
+    TextView syncState;
     TextView timer;
     TextView rightArrow;
     TextView leftArrow;
     TextView batteryVoltage;
+    TextView RPMBackground;
+    TextView lambdaBackground;
+    TextView engineEnable;
+    TextView limpMode;
     public Handler handler;
     //public MqttAndroidClient MQTTClient;
 
@@ -29,16 +29,20 @@ public class Passer {
     public Passer(TextView TPS,
                   TextView oilTemp,
                   TextView lambda,
+                  TextView lambdaBackground,
                   TextView speed,
                   TextView RPM,
+                  TextView RPMBackground,
                   TextView SOS,
                   TextView lowBeam,
                   TextView highBeam,
-                  TextView injection,
+                  TextView syncState,
                   TextView timer,
                   TextView rightArrow,
                   TextView leftArrow,
                   TextView batteryVoltage,
+                  TextView engineEnable,
+                  TextView limpMode,
                   Handler handler) {
 
 
@@ -50,12 +54,16 @@ public class Passer {
         this.SOS = SOS;
         this.lowBeam = lowBeam;
         this.highBeam = highBeam;
-        this.injection = injection;
+        this.syncState = syncState;
         this.timer = timer;
         this.rightArrow = rightArrow;
         this.leftArrow = leftArrow;
         this.batteryVoltage = batteryVoltage;
         this.handler = handler;
+        this.engineEnable= engineEnable;
+        this.lambdaBackground= lambdaBackground;
+        this.RPMBackground= RPMBackground;
+        this.limpMode= limpMode;
     }
 
     public void setData(byte[] data) {
