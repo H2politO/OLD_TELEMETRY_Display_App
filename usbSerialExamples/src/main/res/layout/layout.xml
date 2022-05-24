@@ -299,7 +299,6 @@
         android:paddingStart="20dp"
         android:text="EE"
         android:textSize="34sp"
-        android:background="#ad0c14"
         app:layout_constraintBottom_toTopOf="@+id/BottomRow"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"

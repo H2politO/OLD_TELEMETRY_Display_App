@@ -17,14 +17,16 @@ public class myHandler extends Handler {
         int id = byteToInt(data[0]);
         switch(id) {
             case 17://emergences fromm the safe board
-                if (data[3] == 0)
+                if(data[4]!=0) {
+                    if (data[3] == 2)
+                        passer.SOS.post(() -> passer.SOS.setText("Deadman"));
+                    else if (data[3] == 4)
+                        passer.SOS.post(() -> passer.SOS.setText("External"));
+                    else if (data[3] == 8)
+                        passer.SOS.post(() -> passer.SOS.setText("Internal"));
+                }
+                else
                     passer.SOS.post(() -> passer.SOS.setText("SOS"));
-                else if (data[3] == 2)
-                    passer.SOS.post(() -> passer.SOS.setText("Deadman"));
-                else if (data[3] == 4)
-                    passer.SOS.post(() -> passer.SOS.setText("External"));
-                else if (data[3] == 8)
-                    passer.SOS.post(() -> passer.SOS.setText("Internal"));
                 break;
 
             case 49://HMI
@@ -125,6 +127,9 @@ public class myHandler extends Handler {
                 break;
             case 64://third batch of messages from ECU(1/2)
                 //second 2 bytes -> sync state
+                int runMode = byteToInt(data[1],data[2]);
+                if(runMode==3)
+                    passer.engineEnable.post(()->passer.engineEnable.setBackgroundColor(Color.parseColor("#ad0c14")));
                 int syncState=byteToInt(data[3],data[4]);
                 if(syncState==0)
                     passer.syncState.post(()->passer.syncState.setText("0"));
@@ -137,7 +142,7 @@ public class myHandler extends Handler {
             case 65://third batch of messages from ECU(2/2)
                 //third 2 bytes -> vehicle speed
                 double speed= byteToInt(data[5],data[6])*0.036;
-                passer.speed.post(()->passer.speed.setText(String.format("%.2f Km/h",speed)));
+                passer.speed.post(()->passer.speed.setText(String.format("%.2f Km/h ",speed)));
                 break;
             default:
                 break;

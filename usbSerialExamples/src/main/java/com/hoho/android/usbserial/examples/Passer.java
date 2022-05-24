@@ -45,7 +45,6 @@ public class Passer {
                   TextView limpMode,
                   Handler handler) {
 
-
         this.TPS = TPS;
         this.oilTemp = oilTemp;
         this.lambda = lambda;
