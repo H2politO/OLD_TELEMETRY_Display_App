@@ -33,34 +33,34 @@ public class myHandler extends Handler {
                 //first bit->high beam
                 if (getBit(0, data[2]) == 1) {
                     passer.highBeam.post(() -> passer.highBeam.setBackgroundColor(Color.parseColor("#858282")));
-                    passer.lambda.post(()->passer.lambda.setTextColor(Color.parseColor("#000000")));
+                    passer.highBeam.post(()->passer.highBeam.setTextColor(Color.parseColor("#000000")));
                 } else {
                     passer.highBeam.post(() -> passer.highBeam.setBackgroundColor(Color.TRANSPARENT));
-                    passer.lambda.post(() -> passer.lambda.setTextColor(Color.parseColor("#FFFFFF")));
+                    passer.highBeam.post(() -> passer.highBeam.setTextColor(Color.parseColor("#FFFFFF")));
                 }
                 //second bit ->low beam
                 if (getBit(1, data[2]) == 1) {
                     passer.lowBeam.post(() -> passer.lowBeam.setBackgroundColor(Color.parseColor("#858282")));
-                    passer.lambda.post(()->passer.lambda.setTextColor(Color.parseColor("#000000")));
+                    passer.lowBeam.post(()->passer.lowBeam.setTextColor(Color.parseColor("#000000")));
                 } else {
                     passer.lowBeam.post(() -> passer.lowBeam.setBackgroundColor(Color.TRANSPARENT));
-                    passer.lambda.post(()->passer.lambda.setTextColor(Color.parseColor("#FFFFFF")));
+                    passer.lowBeam.post(()->passer.lowBeam.setTextColor(Color.parseColor("#FFFFFF")));
                 }
                 //third bit -> left arrow
                 if (getBit(2, data[2]) == 1){
                     passer.leftArrow.post(() -> passer.leftArrow.setBackgroundColor(Color.parseColor("#f79148")));
-                    passer.lambda.post(()->passer.lambda.setTextColor(Color.parseColor("#000000")));
+                    passer.leftArrow.post(()->passer.leftArrow.setTextColor(Color.parseColor("#000000")));
                 }else {
                     passer.leftArrow.post(() -> passer.leftArrow.setBackgroundColor(Color.TRANSPARENT));
-                    passer.lambda.post(()->passer.lambda.setTextColor(Color.parseColor("#FFFFFF")));
+                    passer.leftArrow.post(()->passer.leftArrow.setTextColor(Color.parseColor("#FFFFFF")));
                 }
                 //forth bit-> right arrow
                 if(getBit(3,data[2])==1) {
                     passer.rightArrow.post(() -> passer.rightArrow.setBackgroundColor(Color.parseColor("#f79148")));
-                    passer.lambda.post(()->passer.lambda.setTextColor(Color.parseColor("#000000")));
+                    passer.rightArrow.post(()->passer.rightArrow.setTextColor(Color.parseColor("#000000")));
                 }else {
                     passer.rightArrow.post(() -> passer.rightArrow.setBackgroundColor(Color.TRANSPARENT));
-                    passer.lambda.post(()->passer.lambda.setTextColor(Color.parseColor("#FFFFFF")));
+                    passer.rightArrow.post(()->passer.rightArrow.setTextColor(Color.parseColor("#FFFFFF")));
                 }
                 break;
 
@@ -119,17 +119,18 @@ public class myHandler extends Handler {
                 passer.batteryVoltage.post(()->passer.batteryVoltage.setText(String.format("%.2f V",VBattery)));
                 if(VBattery<11) {
                     passer.batteryVoltage.post(() -> passer.batteryVoltage.setBackgroundColor(Color.parseColor("ed0909")));
-                    passer.lambda.post(() -> passer.lambda.setTextColor(Color.parseColor("#000000")));
+                    passer.batteryVoltage.post(() -> passer.batteryVoltage.setTextColor(Color.parseColor("#000000")));
                 }else {
                     passer.batteryVoltage.post(() -> passer.batteryVoltage.setBackgroundColor(Color.TRANSPARENT));
-                    passer.lambda.post(()->passer.lambda.setTextColor(Color.parseColor("#FFFFFF")));
+                    passer.batteryVoltage.post(()->passer.batteryVoltage.setTextColor(Color.parseColor("#FFFFFF")));
                 }
                 break;
             case 64://third batch of messages from ECU(1/2)
-                //second 2 bytes -> sync state
+                //first 2 bytes -> runMode
                 int runMode = byteToInt(data[1],data[2]);
                 if(runMode==3)
                     passer.engineEnable.post(()->passer.engineEnable.setBackgroundColor(Color.parseColor("#ad0c14")));
+                //second 2 bytes -> sync state
                 int syncState=byteToInt(data[3],data[4]);
                 if(syncState==0)
                     passer.syncState.post(()->passer.syncState.setText("0"));
