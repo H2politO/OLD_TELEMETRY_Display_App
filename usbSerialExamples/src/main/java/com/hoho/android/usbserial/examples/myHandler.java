@@ -128,7 +128,6 @@ public class myHandler extends Handler {
             case 64://third batch of messages from ECU(1/2)
                 //first 2 bytes -> runMode
                 int runMode = byteToInt(data[1],data[2]);
-                runMode=runMode;
                 if(runMode==3)
                     passer.engineEnable.post(()->passer.engineEnable.setBackgroundColor(Color.parseColor("#ad0c14")));
                 //second 2 bytes -> sync state
