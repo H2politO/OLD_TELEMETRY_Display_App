@@ -1,5 +1,8 @@
 package com.hoho.android.usbserial.examples;
 
+import static com.hoho.android.usbserial.examples.DevicesFragment.IDRA;
+import static com.hoho.android.usbserial.examples.DevicesFragment.JUNO;
+
 import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -33,7 +36,7 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
-import org.w3c.dom.Text;
+import org.eclipse.paho.android.service.MqttAndroidClient;
 
 import java.io.IOException;
 import java.util.Calendar;
@@ -42,10 +45,14 @@ import java.util.Date;
 public class TerminalFragment extends Fragment implements SerialInputOutputManager.Listener {
 
     private static final int WRITE_WAIT_MILLIS = 2000;
-    public static final int THREAD_NUMBER= 14;
+    public static final int THREAD_NUMBER= 7;
 
-    public static final String SERVERURI="ciao";
+    public static final String SERVERURI = "ciao";
     public static final String CLIENTID="ciao";
+    private static final String PASSWORD = "password";
+    private static final String USERNAME = "DisplayIdra";
+    private int car;
+
 
     private enum UsbPermission { Unknown, Requested, Granted, Denied }
 
@@ -60,17 +67,20 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     Passer[] passers= new Passer[THREAD_NUMBER];
 
-    ReadingThread[] threads= new ReadingThread[THREAD_NUMBER];
+    JunoThread[] junoThreads= new JunoThread[THREAD_NUMBER];
+    IdraThread[] idraThreads= new IdraThread[THREAD_NUMBER];
+
     int threadCounter=0;
     Handler handler=new Handler(Looper.getMainLooper());
 
+    private MqttAndroidClient MQTTClient;
 
     private SerialInputOutputManager usbIoManager;
     private UsbSerialPort usbSerialPort;
     private UsbPermission usbPermission = UsbPermission.Unknown;
     private boolean connected = false;
 
-    public TerminalFragment() {
+    public TerminalFragment(int car) {
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -81,6 +91,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                 }
             }
         };
+        this.car=car;
         mainLooper = new Handler(Looper.getMainLooper());
     }
 
@@ -98,8 +109,13 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         baudRate = getArguments().getInt("baud");
         withIoManager = getArguments().getBoolean("withIoManager");
         for(int i=0;i<THREAD_NUMBER;i++) {
-            threads[i] = new ReadingThread();
-            threads[i].start();
+            if(car==JUNO) {
+                junoThreads[i] = new JunoThread();
+                junoThreads[i].start();
+            }else {
+                idraThreads[i] = new IdraThread();
+                idraThreads[i].start();
+            }
         }
     }
 
@@ -134,8 +150,13 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         super.onDestroy();
         for(int i=0;i<THREAD_NUMBER;i++) {
             try {
-                threads[i].looper.quit();
-                threads[i].join();
+                if(car==IDRA) {
+                    idraThreads[i].looper.quit();
+                    idraThreads[i].join();
+                }
+                else{
+
+                }
             } catch (InterruptedException ignored){}
         }
     }
@@ -145,47 +166,95 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
      */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.layout, container, false);
+        View view ;
 
-        TextView TPS = view.findViewById(R.id.TPS);
-        TextView OilTemp = view.findViewById(R.id.OilTemp);
-        TextView Lambda = view.findViewById(R.id.Lambda);
-        TextView lambdaBackground= view.findViewById(R.id.LambdaBackground);
-        TextView Speed = view.findViewById(R.id.Speed);
-        TextView RPM = view.findViewById(R.id.RPM);
-        TextView RPMBackground= view.findViewById(R.id.RPMBackground);
-        TextView SOS = view.findViewById(R.id.SOS);
-        TextView lowBeam = view.findViewById(R.id.LowBeam);
-        TextView highBeam = view.findViewById(R.id.HighBeam);
-        TextView syncState = view.findViewById(R.id.syncState);
-        TextView timer = view.findViewById(R.id.Timer);
-        TextView rightArrow = view.findViewById(R.id.RightArrow);
-        TextView leftArrow = view.findViewById(R.id.LeftArrow);
-        TextView batteryVoltage= view.findViewById(R.id.BatteryVoltage);
-        TextView engineEnable = view.findViewById(R.id.engineEnable);
-        TextView limpMode = view.findViewById(R.id.limpMode);
+        if(car==IDRA) {
+            view = inflater.inflate(R.layout.layout_idra, container, false);
 
-        for(int i=0;i<THREAD_NUMBER;i++) {
-            passers[i] = new Passer(
-                    TPS,
-                    OilTemp,
-                    Lambda,
-                    lambdaBackground,
-                    Speed,
-                    RPM,
-                    RPMBackground,
-                    SOS,
-                    lowBeam,
-                    highBeam,
-                    syncState,
-                    timer,
-                    rightArrow,
-                    leftArrow,
-                    batteryVoltage,
-                    engineEnable,
-                    limpMode,
-                    handler
-            );
+            TextView purge;
+            TextView _short;
+            TextView emergences;
+            TextView motorOn;
+            TextView actuationOn;
+            TextView temperature;
+            TextView strategy;
+            TextView FCVoltage;
+            TextView FCCurrent;
+            TextView SCVoltage;
+            TextView speed;
+
+            purge = view.findViewById(R.id.Purge);
+            _short = view.findViewById(R.id.Short);
+            emergences = view.findViewById(R.id.Emergences);
+            motorOn = view.findViewById(R.id.MotorOn);
+            actuationOn = view.findViewById(R.id.ActuationOn);
+            temperature = view.findViewById(R.id.Temperature);
+            strategy = view.findViewById(R.id.Strategy);
+            FCVoltage = view.findViewById(R.id.FCVoltage);
+            FCCurrent = view.findViewById(R.id.FCCurrent);
+            SCVoltage = view.findViewById(R.id.VoltageSC);
+            speed = view.findViewById(R.id.Speed);
+
+            for (int i = 0; i < THREAD_NUMBER; i++) {
+                passers[i] = new Passer(
+                        purge,
+                        _short,
+                        emergences,
+                        motorOn,
+                        actuationOn,
+                        temperature,
+                        strategy,
+                        FCVoltage,
+                        FCCurrent,
+                        SCVoltage,
+                        speed,
+                        handler
+                );
+            }
+        }
+        else{
+            view = inflater.inflate(R.layout.layout_juno, container, false);
+
+            TextView TPS = view.findViewById(R.id.TPS);
+            TextView OilTemp = view.findViewById(R.id.OilTemp);
+            TextView Lambda = view.findViewById(R.id.Lambda);
+            TextView lambdaBackground= view.findViewById(R.id.LambdaBackground);
+            TextView Speed = view.findViewById(R.id.Speed);
+            TextView RPM = view.findViewById(R.id.RPM);
+            TextView RPMBackground= view.findViewById(R.id.RPMBackground);
+            TextView SOS = view.findViewById(R.id.SOS);
+            TextView lowBeam = view.findViewById(R.id.LowBeam);
+            TextView highBeam = view.findViewById(R.id.HighBeam);
+            TextView syncState = view.findViewById(R.id.syncState);
+            TextView timer = view.findViewById(R.id.Timer);
+            TextView rightArrow = view.findViewById(R.id.RightArrow);
+            TextView leftArrow = view.findViewById(R.id.LeftArrow);
+            TextView batteryVoltage= view.findViewById(R.id.BatteryVoltage);
+            TextView engineEnable = view.findViewById(R.id.engineEnable);
+            TextView limpMode = view.findViewById(R.id.limpMode);
+
+            for(int i=0;i<THREAD_NUMBER;i++) {
+                passers[i] = new Passer(
+                        TPS,
+                        OilTemp,
+                        Lambda,
+                        lambdaBackground,
+                        Speed,
+                        RPM,
+                        RPMBackground,
+                        SOS,
+                        lowBeam,
+                        highBeam,
+                        syncState,
+                        timer,
+                        rightArrow,
+                        leftArrow,
+                        batteryVoltage,
+                        engineEnable,
+                        limpMode,
+                        handler
+                );
+            }
         }
         return view;
     }
@@ -309,7 +378,10 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             Message msg = Message.obtain();
             passers[threadCounter].setData(data);
             msg.obj = passers[threadCounter];
-            threads[threadCounter].handler.sendMessage(msg);
+            if(car==IDRA)
+                idraThreads[threadCounter].handler.sendMessage(msg);
+            else
+                junoThreads[threadCounter].handler.sendMessage(msg);
             threadCounter = (threadCounter + 1) % THREAD_NUMBER;
         }
     }

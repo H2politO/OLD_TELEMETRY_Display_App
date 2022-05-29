@@ -1,0 +1,319 @@
+Index: usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.hoho.android.usbserial.examples;\r\n\r\nimport android.annotation.SuppressLint;\r\nimport android.app.PendingIntent;\r\nimport android.content.BroadcastReceiver;\r\nimport android.content.Context;\r\nimport android.content.Intent;\r\nimport android.content.IntentFilter;\r\nimport android.hardware.usb.UsbDevice;\r\nimport android.hardware.usb.UsbDeviceConnection;\r\nimport android.hardware.usb.UsbManager;\r\n\r\nimport android.os.Bundle;\r\nimport android.os.Handler;\r\nimport android.os.Looper;\r\nimport android.os.Message;\r\nimport android.view.LayoutInflater;\r\nimport android.view.Menu;\r\nimport android.view.MenuInflater;\r\nimport android.view.MenuItem;\r\nimport android.view.View;\r\nimport android.view.ViewGroup;\r\nimport android.widget.TextView;\r\nimport android.widget.Toast;\r\n\r\nimport androidx.annotation.NonNull;\r\nimport androidx.annotation.Nullable;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport androidx.fragment.app.Fragment;\r\n\r\nimport com.hoho.android.usbserial.driver.UsbSerialDriver;\r\nimport com.hoho.android.usbserial.driver.UsbSerialPort;\r\nimport com.hoho.android.usbserial.driver.UsbSerialProber;\r\nimport com.hoho.android.usbserial.util.SerialInputOutputManager;\r\n\r\nimport org.w3c.dom.Text;\r\n\r\nimport java.io.IOException;\r\nimport java.util.Calendar;\r\nimport java.util.Date;\r\n\r\npublic class TerminalFragment extends Fragment implements SerialInputOutputManager.Listener {\r\n\r\n    private static final int WRITE_WAIT_MILLIS = 2000;\r\n    public static final int THREAD_NUMBER= 14;\r\n\r\n    public static final String SERVERURI=\"ciao\";\r\n    public static final String CLIENTID=\"ciao\";\r\n\r\n    private enum UsbPermission { Unknown, Requested, Granted, Denied }\r\n\r\n    private static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + \".GRANT_USB\";\r\n\r\n    private int deviceId, portNum, baudRate;\r\n    private boolean withIoManager;\r\n\r\n    private final BroadcastReceiver broadcastReceiver;\r\n    private final Handler mainLooper;\r\n\r\n\r\n    Passer[] passers= new Passer[THREAD_NUMBER];\r\n\r\n    ReadingThread[] threads= new ReadingThread[THREAD_NUMBER];\r\n    int threadCounter=0;\r\n    Handler handler=new Handler(Looper.getMainLooper());\r\n\r\n\r\n    private SerialInputOutputManager usbIoManager;\r\n    private UsbSerialPort usbSerialPort;\r\n    private UsbPermission usbPermission = UsbPermission.Unknown;\r\n    private boolean connected = false;\r\n\r\n    public TerminalFragment() {\r\n        broadcastReceiver = new BroadcastReceiver() {\r\n            @Override\r\n            public void onReceive(Context context, Intent intent) {\r\n                if(INTENT_ACTION_GRANT_USB.equals(intent.getAction())) {\r\n                    usbPermission = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)\r\n                            ? UsbPermission.Granted : UsbPermission.Denied;\r\n                    connect();\r\n                }\r\n            }\r\n        };\r\n        mainLooper = new Handler(Looper.getMainLooper());\r\n    }\r\n\r\n    /*\r\n     * Lifecycle\r\n     */\r\n    @Override\r\n    public void onCreate(@Nullable Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setHasOptionsMenu(true);\r\n        setRetainInstance(true);\r\n        assert getArguments() != null;\r\n        deviceId = getArguments().getInt(\"device\");\r\n        portNum = getArguments().getInt(\"port\");\r\n        baudRate = getArguments().getInt(\"baud\");\r\n        withIoManager = getArguments().getBoolean(\"withIoManager\");\r\n        for(int i=0;i<THREAD_NUMBER;i++) {\r\n            threads[i] = new ReadingThread();\r\n            threads[i].start();\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public void onResume() {\r\n        super.onResume();\r\n        getActivity().registerReceiver(broadcastReceiver, new IntentFilter(INTENT_ACTION_GRANT_USB));\r\n        ((AppCompatActivity)getActivity()).getSupportActionBar().hide();\r\n        if(usbPermission == UsbPermission.Unknown || usbPermission == UsbPermission.Granted)\r\n            mainLooper.post(this::connect);\r\n        Date currentTime = Calendar.getInstance().getTime();\r\n        send(currentTime.toString());\r\n    }\r\n\r\n    @Override\r\n    public void onPause() {\r\n        if(!connected) {\r\n            Toast.makeText(getActivity(), \"not able to connect\", Toast.LENGTH_SHORT).show();\r\n            disconnect();\r\n        }\r\n        getActivity().unregisterReceiver(broadcastReceiver);\r\n        super.onPause();\r\n    }\r\n\r\n    public void onStop() {\r\n        super.onStop();\r\n        ((AppCompatActivity)getActivity()).getSupportActionBar().show();\r\n    }\r\n\r\n    @Override\r\n    public void onDestroy() {\r\n        super.onDestroy();\r\n        for(int i=0;i<THREAD_NUMBER;i++) {\r\n            try {\r\n                threads[i].looper.quit();\r\n                threads[i].join();\r\n            } catch (InterruptedException ignored){}\r\n        }\r\n    }\r\n\r\n    /*\r\n     * UI\r\n     */\r\n    @Override\r\n    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {\r\n        View view = inflater.inflate(R.layout.layout, container, false);\r\n\r\n        TextView TPS = view.findViewById(R.id.TPS);\r\n        TextView OilTemp = view.findViewById(R.id.OilTemp);\r\n        TextView Lambda = view.findViewById(R.id.Lambda);\r\n        TextView lambdaBackground= view.findViewById(R.id.LambdaBackground);\r\n        TextView Speed = view.findViewById(R.id.Speed);\r\n        TextView RPM = view.findViewById(R.id.RPM);\r\n        TextView RPMBackground= view.findViewById(R.id.RPMBackground);\r\n        TextView SOS = view.findViewById(R.id.SOS);\r\n        TextView lowBeam = view.findViewById(R.id.LowBeam);\r\n        TextView highBeam = view.findViewById(R.id.HighBeam);\r\n        TextView syncState = view.findViewById(R.id.syncState);\r\n        TextView timer = view.findViewById(R.id.Timer);\r\n        TextView rightArrow = view.findViewById(R.id.RightArrow);\r\n        TextView leftArrow = view.findViewById(R.id.LeftArrow);\r\n        TextView batteryVoltage= view.findViewById(R.id.BatteryVoltage);\r\n        TextView engineEnable = view.findViewById(R.id.engineEnable);\r\n        TextView limpMode = view.findViewById(R.id.limpMode);\r\n\r\n        for(int i=0;i<THREAD_NUMBER;i++) {\r\n            passers[i] = new Passer(\r\n                    TPS,\r\n                    OilTemp,\r\n                    Lambda,\r\n                    lambdaBackground,\r\n                    Speed,\r\n                    RPM,\r\n                    RPMBackground,\r\n                    SOS,\r\n                    lowBeam,\r\n                    highBeam,\r\n                    syncState,\r\n                    timer,\r\n                    rightArrow,\r\n                    leftArrow,\r\n                    batteryVoltage,\r\n                    engineEnable,\r\n                    limpMode,\r\n                    handler\r\n            );\r\n        }\r\n        return view;\r\n    }\r\n\r\n    @Override\r\n    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {\r\n        inflater.inflate(R.menu.menu_terminal, menu);\r\n    }\r\n\r\n    @Override\r\n    public boolean onOptionsItemSelected(MenuItem item) {\r\n        int id = item.getItemId();\r\n        if (id == R.id.clear) {\r\n            return true;\r\n        } else if( id == R.id.send_break) {\r\n            if(!connected) {\r\n                Toast.makeText(getActivity(), \"not connected\", Toast.LENGTH_SHORT).show();\r\n            } else {\r\n                try {\r\n                    usbSerialPort.setBreak(true);\r\n                    Thread.sleep(100); // should show progress bar instead of blocking UI thread\r\n                    usbSerialPort.setBreak(false);\r\n                } catch(UnsupportedOperationException ignored) {\r\n                    Toast.makeText(getActivity(), \"BREAK not supported\", Toast.LENGTH_SHORT).show();\r\n                } catch(Exception e) {\r\n                    Toast.makeText(getActivity(), \"BREAK failed: \" + e.getMessage(), Toast.LENGTH_SHORT).show();\r\n                }\r\n            }\r\n            return true;\r\n        } else {\r\n            return super.onOptionsItemSelected(item);\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public void onNewData(byte[] data) {\r\n        mainLooper.post(() -> receive(data));\r\n    }\r\n\r\n    @Override\r\n    public void onRunError(Exception e) {\r\n        mainLooper.post(this::disconnect);\r\n    }\r\n\r\n    private void connect() {\r\n        UsbDevice device = null;\r\n        UsbManager usbManager = (UsbManager) getActivity().getSystemService(Context.USB_SERVICE);\r\n        for(UsbDevice v : usbManager.getDeviceList().values())\r\n            if(v.getDeviceId() == deviceId)\r\n                device = v;\r\n        if(device == null) {\r\n            return;\r\n        }\r\n        UsbSerialDriver driver = UsbSerialProber.getDefaultProber().probeDevice(device);\r\n        if(driver == null) {\r\n            driver = CustomProber.getCustomProber().probeDevice(device);\r\n        }\r\n        if(driver == null) {\r\n            return;\r\n        }\r\n        if(driver.getPorts().size() < portNum) {\r\n            return;\r\n        }\r\n        usbSerialPort = driver.getPorts().get(portNum);\r\n        UsbDeviceConnection usbConnection = usbManager.openDevice(driver.getDevice());\r\n        if(usbConnection == null && usbPermission == UsbPermission.Unknown && !usbManager.hasPermission(driver.getDevice())) {\r\n            usbPermission = UsbPermission.Requested;\r\n            PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(getActivity(), 0, new Intent(INTENT_ACTION_GRANT_USB), 0);\r\n            usbManager.requestPermission(driver.getDevice(), usbPermissionIntent);\r\n            return;\r\n        }\r\n        if(usbConnection == null)\r\n            return;\r\n        try {\r\n            usbSerialPort.open(usbConnection);\r\n            usbSerialPort.setParameters(baudRate, 8, 1, UsbSerialPort.PARITY_NONE);\r\n            if(withIoManager) {\r\n                usbIoManager = new SerialInputOutputManager(usbSerialPort, this);\r\n                usbIoManager.start();\r\n            }\r\n            connected = true;\r\n        } catch (Exception e) {\r\n            Toast.makeText(getActivity(), \"not able to connect\", Toast.LENGTH_SHORT).show();\r\n            disconnect();\r\n        }\r\n    }\r\n\r\n    private void disconnect() {\r\n        connected = false;\r\n        if(usbIoManager != null) {\r\n            usbIoManager.setListener(null);\r\n            usbIoManager.stop();\r\n        }\r\n        usbIoManager = null;\r\n        try {\r\n            usbSerialPort.close();\r\n        } catch (IOException ignored) {}\r\n        usbSerialPort = null;\r\n    }\r\n\r\n    private void send(String str) {\r\n        if(!connected) {\r\n            return;\r\n        }\r\n        try {\r\n            byte[] data =  str.getBytes();\r\n            usbSerialPort.write(data, WRITE_WAIT_MILLIS);\r\n        } catch (Exception e) {\r\n            onRunError(e);\r\n        }\r\n    }\r\n\r\n    //spurghi->verde #00FF00\r\n    //corti->giallo #FFFF00\r\n    //motorOn->rosso #FF0000\r\n    //supercap->viola #FF00FF\r\n    //Attuazione->blu #0000FF\r\n    @SuppressLint(\"DefaultLocale\")\r\n    private void receive(byte[] data) {\r\n        if (data.length > 0 ) {\r\n            Message msg = Message.obtain();\r\n            passers[threadCounter].setData(data);\r\n            msg.obj = passers[threadCounter];\r\n            threads[threadCounter].handler.sendMessage(msg);\r\n            threadCounter = (threadCounter + 1) % THREAD_NUMBER;\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java b/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java
+--- a/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java	
++++ b/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java	
+@@ -44,8 +44,10 @@
+     private static final int WRITE_WAIT_MILLIS = 2000;
+     public static final int THREAD_NUMBER= 14;
+ 
+-    public static final String SERVERURI="ciao";
+-    public static final String CLIENTID="ciao";
++    public static final int JUNO = 0;
++    public static final int IDRA= 1;
++
++    private int car;
+ 
+     private enum UsbPermission { Unknown, Requested, Granted, Denied }
+ 
+@@ -70,7 +72,7 @@
+     private UsbPermission usbPermission = UsbPermission.Unknown;
+     private boolean connected = false;
+ 
+-    public TerminalFragment() {
++    public TerminalFragment(int car) {
+         broadcastReceiver = new BroadcastReceiver() {
+             @Override
+             public void onReceive(Context context, Intent intent) {
+@@ -81,6 +83,7 @@
+                 }
+             }
+         };
++        this.car=car;
+         mainLooper = new Handler(Looper.getMainLooper());
+     }
+ 
+@@ -145,47 +148,52 @@
+      */
+     @Override
+     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+-        View view = inflater.inflate(R.layout.layout, container, false);
++        if(car==JUNO) {
++            View view = inflater.inflate(R.layout.layout, container, false);
+ 
+-        TextView TPS = view.findViewById(R.id.TPS);
+-        TextView OilTemp = view.findViewById(R.id.OilTemp);
+-        TextView Lambda = view.findViewById(R.id.Lambda);
+-        TextView lambdaBackground= view.findViewById(R.id.LambdaBackground);
+-        TextView Speed = view.findViewById(R.id.Speed);
+-        TextView RPM = view.findViewById(R.id.RPM);
+-        TextView RPMBackground= view.findViewById(R.id.RPMBackground);
+-        TextView SOS = view.findViewById(R.id.SOS);
+-        TextView lowBeam = view.findViewById(R.id.LowBeam);
+-        TextView highBeam = view.findViewById(R.id.HighBeam);
+-        TextView syncState = view.findViewById(R.id.syncState);
+-        TextView timer = view.findViewById(R.id.Timer);
+-        TextView rightArrow = view.findViewById(R.id.RightArrow);
+-        TextView leftArrow = view.findViewById(R.id.LeftArrow);
+-        TextView batteryVoltage= view.findViewById(R.id.BatteryVoltage);
+-        TextView engineEnable = view.findViewById(R.id.engineEnable);
+-        TextView limpMode = view.findViewById(R.id.limpMode);
++            TextView TPS = view.findViewById(R.id.TPS);
++            TextView OilTemp = view.findViewById(R.id.OilTemp);
++            TextView Lambda = view.findViewById(R.id.Lambda);
++            TextView lambdaBackground = view.findViewById(R.id.LambdaBackground);
++            TextView Speed = view.findViewById(R.id.Speed);
++            TextView RPM = view.findViewById(R.id.RPM);
++            TextView RPMBackground = view.findViewById(R.id.RPMBackground);
++            TextView SOS = view.findViewById(R.id.SOS);
++            TextView lowBeam = view.findViewById(R.id.LowBeam);
++            TextView highBeam = view.findViewById(R.id.HighBeam);
++            TextView syncState = view.findViewById(R.id.syncState);
++            TextView timer = view.findViewById(R.id.Timer);
++            TextView rightArrow = view.findViewById(R.id.RightArrow);
++            TextView leftArrow = view.findViewById(R.id.LeftArrow);
++            TextView batteryVoltage = view.findViewById(R.id.BatteryVoltage);
++            TextView engineEnable = view.findViewById(R.id.engineEnable);
++            TextView limpMode = view.findViewById(R.id.limpMode);
+ 
+-        for(int i=0;i<THREAD_NUMBER;i++) {
+-            passers[i] = new Passer(
+-                    TPS,
+-                    OilTemp,
+-                    Lambda,
+-                    lambdaBackground,
+-                    Speed,
+-                    RPM,
+-                    RPMBackground,
+-                    SOS,
+-                    lowBeam,
+-                    highBeam,
+-                    syncState,
+-                    timer,
+-                    rightArrow,
+-                    leftArrow,
+-                    batteryVoltage,
+-                    engineEnable,
+-                    limpMode,
+-                    handler
+-            );
++            for (int i = 0; i < THREAD_NUMBER; i++) {
++                passers[i] = new Passer(
++                        TPS,
++                        OilTemp,
++                        Lambda,
++                        lambdaBackground,
++                        Speed,
++                        RPM,
++                        RPMBackground,
++                        SOS,
++                        lowBeam,
++                        highBeam,
++                        syncState,
++                        timer,
++                        rightArrow,
++                        leftArrow,
++                        batteryVoltage,
++                        engineEnable,
++                        limpMode,
++                        handler
++                );
++            }
++        }
++        else{
++
+         }
+         return view;
+     }
+Index: usbSerialExamples/src/main/res/layout/device_list_item.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<LinearLayout\r\n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    android:layout_width=\"match_parent\"\r\n    android:layout_height=\"match_parent\"\r\n    android:orientation=\"vertical\">\r\n\r\n    <TextView\r\n        android:id=\"@+id/text1\"\r\n        android:layout_marginTop=\"12dp\"\r\n        android:layout_marginStart=\"12dp\"\r\n        android:layout_marginEnd=\"12dp\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:textAppearance=\"@style/TextAppearance.AppCompat.Medium\" />\r\n\r\n    <TextView\r\n        android:id=\"@+id/text2\"\r\n        android:layout_marginStart=\"20dp\"\r\n        android:layout_marginEnd=\"20dp\"\r\n        android:layout_marginBottom=\"12dp\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:textAppearance=\"@style/TextAppearance.AppCompat.Small\" />\r\n\r\n</LinearLayout>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/usbSerialExamples/src/main/res/layout/device_list_item.xml b/usbSerialExamples/src/main/res/layout/device_list_item.xml
+--- a/usbSerialExamples/src/main/res/layout/device_list_item.xml	
++++ b/usbSerialExamples/src/main/res/layout/device_list_item.xml	
+@@ -1,6 +1,7 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <LinearLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     android:orientation="vertical">
+@@ -23,4 +24,25 @@
+         android:layout_height="wrap_content"
+         android:textAppearance="@style/TextAppearance.AppCompat.Small" />
+ 
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="400dp"
++        android:layout_gravity="center"
++        android:orientation="horizontal">
++
++        <ImageButton
++            android:id="@+id/Juno"
++            android:layout_width="203dp"
++            android:layout_height="match_parent"
++            app:srcCompat="@android:drawable/arrow_down_float" />
++
++        <ImageButton
++            android:id="@+id/Idra"
++            android:layout_width="match_parent"
++            android:layout_height="match_parent"
++            app:srcCompat="@android:drawable/arrow_up_float" />
++
++    </LinearLayout>
++
++
+ </LinearLayout>
+Index: usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/DevicesFragment.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.hoho.android.usbserial.examples;\r\n\r\nimport android.app.AlertDialog;\r\nimport android.content.Context;\r\nimport android.hardware.usb.UsbDevice;\r\nimport android.hardware.usb.UsbManager;\r\nimport android.os.Bundle;\r\n\r\nimport androidx.annotation.NonNull;\r\nimport androidx.fragment.app.Fragment;\r\nimport androidx.fragment.app.ListFragment;\r\nimport android.view.Menu;\r\nimport android.view.MenuInflater;\r\nimport android.view.MenuItem;\r\nimport android.view.View;\r\nimport android.view.ViewGroup;\r\nimport android.widget.ArrayAdapter;\r\nimport android.widget.ListView;\r\nimport android.widget.TextView;\r\nimport android.widget.Toast;\r\n\r\nimport com.hoho.android.usbserial.driver.UsbSerialDriver;\r\nimport com.hoho.android.usbserial.driver.UsbSerialProber;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.Locale;\r\n\r\npublic class DevicesFragment extends ListFragment {\r\n\r\n    static class ListItem {\r\n        UsbDevice device;\r\n        int port;\r\n        UsbSerialDriver driver;\r\n\r\n        ListItem(UsbDevice device, int port, UsbSerialDriver driver) {\r\n            this.device = device;\r\n            this.port = port;\r\n            this.driver = driver;\r\n        }\r\n    }\r\n\r\n    private final ArrayList<ListItem> listItems = new ArrayList<>();\r\n    private ArrayAdapter<ListItem> listAdapter;\r\n    private int baudRate = 115200;//TODO: check for baud rate for different devices\r\n    private boolean withIoManager = true;\r\n\r\n    @Override\r\n    public void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setHasOptionsMenu(true);\r\n        listAdapter = new ArrayAdapter<ListItem>(getActivity(), 0, listItems) {\r\n            @NonNull\r\n            @Override\r\n            public View getView(int position, View view, @NonNull ViewGroup parent) {\r\n                ListItem item = listItems.get(position);\r\n                if (view == null)\r\n                    view = getActivity().getLayoutInflater().inflate(R.layout.device_list_item, parent, false);\r\n                TextView text1 = view.findViewById(R.id.text1);\r\n                TextView text2 = view.findViewById(R.id.text2);\r\n                if(item.driver == null)\r\n                    text1.setText(\"<no driver>\");\r\n                else if(item.driver.getPorts().size() == 1)\r\n                    text1.setText(item.driver.getClass().getSimpleName().replace(\"SerialDriver\",\"\"));\r\n                else\r\n                    text1.setText(item.driver.getClass().getSimpleName().replace(\"SerialDriver\",\"\")+\", Port \"+item.port);\r\n                text2.setText(String.format(Locale.US, \"Vendor %04X, Product %04X\", item.device.getVendorId(), item.device.getProductId()));\r\n                return view;\r\n            }\r\n        };\r\n    }\r\n\r\n    @Override\r\n    public void onActivityCreated(Bundle savedInstanceState) {\r\n        super.onActivityCreated(savedInstanceState);\r\n        setListAdapter(null);\r\n        View header = getActivity().getLayoutInflater().inflate(R.layout.device_list_header, null, false);\r\n        getListView().addHeaderView(header, null, false);\r\n        setEmptyText(\"<no USB devices found>\");\r\n        ((TextView) getListView().getEmptyView()).setTextSize(18);\r\n        setListAdapter(listAdapter);\r\n    }\r\n\r\n    @Override\r\n    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {\r\n        inflater.inflate(R.menu.menu_devices, menu);\r\n    }\r\n\r\n    @Override\r\n    public void onResume() {\r\n        super.onResume();\r\n        refresh();\r\n    }\r\n\r\n    @Override\r\n    public boolean onOptionsItemSelected(MenuItem item) {\r\n        int id = item.getItemId();\r\n        if(id == R.id.refresh) {\r\n            refresh();\r\n            return true;\r\n        } else if (id ==R.id.baud_rate) {\r\n            final String[] values = getResources().getStringArray(R.array.baud_rates);\r\n            int pos = java.util.Arrays.asList(values).indexOf(String.valueOf(baudRate));\r\n            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());\r\n            builder.setTitle(\"Baud rate\");\r\n            builder.setSingleChoiceItems(values, pos, (dialog, which) -> {\r\n                baudRate = Integer.parseInt(values[which]);\r\n                dialog.dismiss();\r\n            });\r\n            builder.create().show();\r\n            return true;\r\n        } else if (id ==R.id.read_mode) {\r\n            final String[] values = getResources().getStringArray(R.array.read_modes);\r\n            int pos = withIoManager ? 0 : 1; // read_modes[0]=event/io-manager, read_modes[1]=direct\r\n            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());\r\n            builder.setTitle(\"Read mode\");\r\n            builder.setSingleChoiceItems(values, pos, (dialog, which) -> {\r\n                withIoManager = (which == 0);\r\n                dialog.dismiss();\r\n            });\r\n            builder.create().show();\r\n            return true;\r\n        } else {\r\n            return super.onOptionsItemSelected(item);\r\n        }\r\n    }\r\n\r\n    void refresh() {\r\n        UsbManager usbManager = (UsbManager) getActivity().getSystemService(Context.USB_SERVICE);\r\n        UsbSerialProber usbDefaultProber = UsbSerialProber.getDefaultProber();\r\n        UsbSerialProber usbCustomProber = CustomProber.getCustomProber();\r\n        listItems.clear();\r\n        for(UsbDevice device : usbManager.getDeviceList().values()) {\r\n            UsbSerialDriver driver = usbDefaultProber.probeDevice(device);\r\n            if(driver == null) {\r\n                driver = usbCustomProber.probeDevice(device);\r\n            }\r\n            if(driver != null) {\r\n                for(int port = 0; port < driver.getPorts().size(); port++)\r\n                    listItems.add(new ListItem(device, port, driver));\r\n            } else {\r\n                listItems.add(new ListItem(device, 0, null));\r\n            }\r\n        }\r\n        listAdapter.notifyDataSetChanged();\r\n    }\r\n\r\n    @Override\r\n    public void onListItemClick(@NonNull ListView l, @NonNull View v, int position, long id) {\r\n        ListItem item = listItems.get(position-1);\r\n        if(item.driver == null) {\r\n            Toast.makeText(getActivity(), \"no driver\", Toast.LENGTH_SHORT).show();\r\n        } else {\r\n            Bundle args = new Bundle();\r\n            args.putInt(\"device\", item.device.getDeviceId());\r\n            args.putInt(\"port\", item.port);\r\n            args.putInt(\"baud\", baudRate);\r\n            args.putBoolean(\"withIoManager\", withIoManager);\r\n            Fragment fragment = new TerminalFragment();\r\n            fragment.setArguments(args);\r\n            getFragmentManager().beginTransaction().replace(R.id.fragment, fragment, \"terminal\").addToBackStack(null).commit();\r\n        }\r\n    }\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/DevicesFragment.java b/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/DevicesFragment.java
+--- a/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/DevicesFragment.java	
++++ b/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/DevicesFragment.java	
+@@ -2,6 +2,7 @@
+ 
+ import android.app.AlertDialog;
+ import android.content.Context;
++import android.graphics.Color;
+ import android.hardware.usb.UsbDevice;
+ import android.hardware.usb.UsbManager;
+ import android.os.Bundle;
+@@ -15,6 +16,7 @@
+ import android.view.View;
+ import android.view.ViewGroup;
+ import android.widget.ArrayAdapter;
++import android.widget.ImageButton;
+ import android.widget.ListView;
+ import android.widget.TextView;
+ import android.widget.Toast;
+@@ -27,6 +29,9 @@
+ 
+ public class DevicesFragment extends ListFragment {
+ 
++    public static final int JUNO = 0;
++    public static final int IDRA= 1;
++
+     static class ListItem {
+         UsbDevice device;
+         int port;
+@@ -38,6 +43,9 @@
+             this.driver = driver;
+         }
+     }
++    ImageButton juno;
++    ImageButton idra;
++    int car;
+ 
+     private final ArrayList<ListItem> listItems = new ArrayList<>();
+     private ArrayAdapter<ListItem> listAdapter;
+@@ -57,6 +65,19 @@
+                     view = getActivity().getLayoutInflater().inflate(R.layout.device_list_item, parent, false);
+                 TextView text1 = view.findViewById(R.id.text1);
+                 TextView text2 = view.findViewById(R.id.text2);
++                juno= view.findViewById(R.id.Juno);
++                idra= view.findViewById(R.id.Idra);
++                juno.setOnClickListener(view12 -> {
++                    car=JUNO;
++                    juno.setBackgroundColor(Color.parseColor("#adf147"));
++                    idra.setBackgroundColor(Color.TRANSPARENT);
++                });
++                idra.setOnClickListener(view1 -> {
++                    car=IDRA;
++                    idra.setBackgroundColor(Color.parseColor("#adf147"));
++                    juno.setBackgroundColor(Color.TRANSPARENT);
++                });
++
+                 if(item.driver == null)
+                     text1.setText("<no driver>");
+                 else if(item.driver.getPorts().size() == 1)
+@@ -75,7 +96,6 @@
+         setListAdapter(null);
+         View header = getActivity().getLayoutInflater().inflate(R.layout.device_list_header, null, false);
+         getListView().addHeaderView(header, null, false);
+-        setEmptyText("<no USB devices found>");
+         ((TextView) getListView().getEmptyView()).setTextSize(18);
+         setListAdapter(listAdapter);
+     }
+@@ -155,7 +175,7 @@
+             args.putInt("port", item.port);
+             args.putInt("baud", baudRate);
+             args.putBoolean("withIoManager", withIoManager);
+-            Fragment fragment = new TerminalFragment();
++            Fragment fragment = new TerminalFragment(car);
+             fragment.setArguments(args);
+             getFragmentManager().beginTransaction().replace(R.id.fragment, fragment, "terminal").addToBackStack(null).commit();
+         }
+Index: usbSerialExamples/src/main/res/layout/fragment_terminal.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<LinearLayout\r\n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\r\n    android:layout_width=\"match_parent\"\r\n    android:layout_height=\"match_parent\"\r\n    android:orientation=\"vertical\">\r\n\r\n    <LinearLayout\r\n        android:layout_width=\"wrap_content\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"horizontal\">\r\n\r\n        <ToggleButton\r\n            android:id=\"@+id/controlLineRts\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:minWidth=\"48sp\"\r\n            android:textOff=\"RTS\"\r\n            android:textOn=\"RTS\" />\r\n\r\n        <ToggleButton\r\n            android:id=\"@+id/controlLineCts\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:minWidth=\"48sp\"\r\n            android:clickable=\"false\"\r\n            android:textColor=\"@android:color/secondary_text_dark\"\r\n            android:textOff=\"CTS\"\r\n            android:textOn=\"CTS\" />\r\n\r\n        <View\r\n            android:layout_height=\"match_parent\"\r\n            android:layout_width=\"6dp\" />\r\n\r\n        <ToggleButton\r\n            android:id=\"@+id/controlLineDtr\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:minWidth=\"48sp\"\r\n            android:textOff=\"DTR\"\r\n            android:textOn=\"DTR\" />\r\n\r\n        <ToggleButton\r\n            android:id=\"@+id/controlLineDsr\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:clickable=\"false\"\r\n            android:minWidth=\"48sp\"\r\n            android:textColor=\"@android:color/secondary_text_dark\"\r\n            android:textOff=\"DSR\"\r\n            android:textOn=\"DSR\" />\r\n\r\n        <View\r\n            android:layout_height=\"match_parent\"\r\n            android:layout_width=\"6dp\" />\r\n\r\n        <ToggleButton\r\n            android:id=\"@+id/controlLineCd\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:clickable=\"false\"\r\n            android:minWidth=\"48sp\"\r\n            android:textColor=\"@android:color/secondary_text_dark\"\r\n            android:textOff=\"CD\"\r\n            android:textOn=\"CD\" />\r\n\r\n        <ToggleButton\r\n            android:id=\"@+id/controlLineRi\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:minWidth=\"48sp\"\r\n            android:clickable=\"false\"\r\n            android:textColor=\"@android:color/secondary_text_dark\"\r\n            android:textOff=\"RI\"\r\n            android:textOn=\"RI\" />\r\n\r\n    </LinearLayout>\r\n\r\n    <View\r\n        android:layout_width=\"match_parent\"\r\n        android:background=\"?android:attr/listDivider\"\r\n        android:layout_height=\"2dp\" />\r\n\r\n    <TextView\r\n        android:id=\"@+id/receive_text\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"0dp\"\r\n        android:layout_weight=\"1\"\r\n        android:freezesText=\"true\"\r\n        android:gravity=\"bottom\"\r\n        android:scrollbars=\"vertical\"\r\n        android:textAppearance=\"@style/TextAppearance.AppCompat.Medium\"\r\n        android:typeface=\"monospace\" />\r\n\r\n    <Button\r\n        android:id=\"@+id/receive_btn\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:text=\"Read\" />\r\n\r\n    <View\r\n        android:layout_width=\"match_parent\"\r\n        android:background=\"?android:attr/listDivider\"\r\n        android:layout_height=\"2dp\" />\r\n\r\n    <LinearLayout\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"horizontal\">\r\n\r\n        <EditText\r\n            android:id=\"@+id/send_text\"\r\n            android:layout_width=\"0dp\"\r\n            android:layout_height=\"match_parent\"\r\n            android:layout_weight=\"1\"\r\n            android:inputType=\"text|textNoSuggestions\"\r\n            android:singleLine=\"true\" />\r\n\r\n        <ImageButton\r\n            android:id=\"@+id/send_btn\"\r\n            android:layout_width=\"wrap_content\"\r\n            android:layout_height=\"wrap_content\"\r\n            app:srcCompat=\"@drawable/ic_send_white_24dp\" />\r\n    </LinearLayout>\r\n\r\n</LinearLayout>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/usbSerialExamples/src/main/res/layout/fragment_terminal.xml b/usbSerialExamples/src/main/res/layout/fragment_terminal.xml
+--- a/usbSerialExamples/src/main/res/layout/fragment_terminal.xml	
++++ b/usbSerialExamples/src/main/res/layout/fragment_terminal.xml	
+@@ -2,6 +2,7 @@
+ <LinearLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     android:orientation="vertical">
+@@ -82,16 +83,12 @@
+         android:background="?android:attr/listDivider"
+         android:layout_height="2dp" />
+ 
+-    <TextView
+-        android:id="@+id/receive_text"
+-        android:layout_width="match_parent"
+-        android:layout_height="0dp"
+-        android:layout_weight="1"
+-        android:freezesText="true"
+-        android:gravity="bottom"
+-        android:scrollbars="vertical"
+-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+-        android:typeface="monospace" />
++    <ImageButton
++        android:id="@+id/imageButton2"
++        android:layout_width="204dp"
++        android:layout_height="275dp"
++        tools:srcCompat="@tools:sample/backgrounds/scenic" />
++
+ 
+     <Button
+         android:id="@+id/receive_btn"
+Index: .idea/codestream.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"CodeStream\">\r\n    <option name=\"webViewContext\" value=\"{&quot;chatProviderAccess&quot;:&quot;strict&quot;,&quot;currentTeamId&quot;:&quot;&quot;,&quot;currentStreamId&quot;:&quot;&quot;,&quot;pullRequestCheckoutBranch&quot;:false,&quot;isRepositioning&quot;:false,&quot;onboardStep&quot;:0,&quot;panelStack&quot;:[&quot;landing-redirect&quot;],&quot;hasFocus&quot;:false,&quot;channelFilter&quot;:&quot;all&quot;,&quot;channelsMuteAll&quot;:false,&quot;codemarkFileFilter&quot;:&quot;all&quot;,&quot;codemarkTypeFilter&quot;:&quot;all&quot;,&quot;codemarkTagFilter&quot;:&quot;all&quot;,&quot;codemarkBranchFilter&quot;:&quot;all&quot;,&quot;codemarkAuthorFilter&quot;:&quot;all&quot;,&quot;codemarksFileViewStyle&quot;:&quot;inline&quot;,&quot;codemarksShowArchived&quot;:false,&quot;codemarksShowResolved&quot;:false,&quot;codemarksWrapComments&quot;:false,&quot;showFeedbackSmiley&quot;:true,&quot;route&quot;:{&quot;name&quot;:&quot;newUserEntry&quot;,&quot;params&quot;:{}},&quot;spatialViewShowPRComments&quot;:false,&quot;__teamless__&quot;:{&quot;selectedRegion&quot;:&quot;us&quot;},&quot;sessionStart&quot;:1653550936418}\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/codestream.xml b/.idea/codestream.xml
+--- a/.idea/codestream.xml	
++++ b/.idea/codestream.xml	
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="CodeStream">
+-    <option name="webViewContext" value="{&quot;chatProviderAccess&quot;:&quot;strict&quot;,&quot;currentTeamId&quot;:&quot;&quot;,&quot;currentStreamId&quot;:&quot;&quot;,&quot;pullRequestCheckoutBranch&quot;:false,&quot;isRepositioning&quot;:false,&quot;onboardStep&quot;:0,&quot;panelStack&quot;:[&quot;landing-redirect&quot;],&quot;hasFocus&quot;:false,&quot;channelFilter&quot;:&quot;all&quot;,&quot;channelsMuteAll&quot;:false,&quot;codemarkFileFilter&quot;:&quot;all&quot;,&quot;codemarkTypeFilter&quot;:&quot;all&quot;,&quot;codemarkTagFilter&quot;:&quot;all&quot;,&quot;codemarkBranchFilter&quot;:&quot;all&quot;,&quot;codemarkAuthorFilter&quot;:&quot;all&quot;,&quot;codemarksFileViewStyle&quot;:&quot;inline&quot;,&quot;codemarksShowArchived&quot;:false,&quot;codemarksShowResolved&quot;:false,&quot;codemarksWrapComments&quot;:false,&quot;showFeedbackSmiley&quot;:true,&quot;route&quot;:{&quot;name&quot;:&quot;newUserEntry&quot;,&quot;params&quot;:{}},&quot;spatialViewShowPRComments&quot;:false,&quot;__teamless__&quot;:{&quot;selectedRegion&quot;:&quot;us&quot;},&quot;sessionStart&quot;:1653550936418}" />
++    <option name="webViewContext" value="{&quot;chatProviderAccess&quot;:&quot;strict&quot;,&quot;currentTeamId&quot;:&quot;&quot;,&quot;currentStreamId&quot;:&quot;&quot;,&quot;pullRequestCheckoutBranch&quot;:false,&quot;isRepositioning&quot;:false,&quot;onboardStep&quot;:0,&quot;panelStack&quot;:[&quot;landing-redirect&quot;],&quot;hasFocus&quot;:false,&quot;channelFilter&quot;:&quot;all&quot;,&quot;channelsMuteAll&quot;:false,&quot;codemarkFileFilter&quot;:&quot;all&quot;,&quot;codemarkTypeFilter&quot;:&quot;all&quot;,&quot;codemarkTagFilter&quot;:&quot;all&quot;,&quot;codemarkBranchFilter&quot;:&quot;all&quot;,&quot;codemarkAuthorFilter&quot;:&quot;all&quot;,&quot;codemarksFileViewStyle&quot;:&quot;inline&quot;,&quot;codemarksShowArchived&quot;:false,&quot;codemarksShowResolved&quot;:false,&quot;codemarksWrapComments&quot;:false,&quot;showFeedbackSmiley&quot;:true,&quot;route&quot;:{&quot;name&quot;:&quot;newUserEntry&quot;,&quot;params&quot;:{}},&quot;spatialViewShowPRComments&quot;:false,&quot;__teamless__&quot;:{&quot;selectedRegion&quot;:&quot;us&quot;},&quot;sessionStart&quot;:1653683692384}" />
+   </component>
+ </project>
+\ No newline at end of file

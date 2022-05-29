@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <!-- mipmap/ic_launcher created with Android Studio -> New -> Image Asset using @color/colorPrimary and USB clip art -->
     <application
@@ -9,6 +13,8 @@
         android:theme="@style/AppTheme"
         android:hardwareAccelerated="true"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning">
+        <service android:name="org.eclipse.paho.android.service.MqttService" >
+        </service>
         <!-- for this simple app launchMode=singleTask and singleTop have same effect.
              If you would start another activity in the app, e.g. Android Settings
              then you should use singleTask, else a new MainActivity would be started
@@ -20,6 +26,9 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="stateHidden|adjustResize"
             android:exported="true">
+            android:windowSoftInputMode="stateHidden|adjustResize"
+            android:exported="true">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

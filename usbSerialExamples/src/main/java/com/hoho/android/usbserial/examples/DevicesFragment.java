@@ -2,8 +2,10 @@ package com.hoho.android.usbserial.examples;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.media.Image;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -15,6 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,6 +29,11 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class DevicesFragment extends ListFragment {
+
+    public static final int JUNO =1;
+    public static final int IDRA = 2;
+
+    int  car;
 
     static class ListItem {
         UsbDevice device;
@@ -57,6 +65,26 @@ public class DevicesFragment extends ListFragment {
                     view = getActivity().getLayoutInflater().inflate(R.layout.device_list_item, parent, false);
                 TextView text1 = view.findViewById(R.id.text1);
                 TextView text2 = view.findViewById(R.id.text2);
+                ImageButton Juno= view.findViewById(R.id.Juno);
+                ImageButton Idra= view.findViewById(R.id.Idra);
+                Idra.setBackgroundColor(Color.TRANSPARENT);
+                Juno.setBackgroundColor(Color.TRANSPARENT);
+                Juno.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        car=JUNO;
+                        Juno.setBackgroundColor(Color.parseColor("#e37c2d"));
+                        Idra.setBackgroundColor(Color.TRANSPARENT);
+                        }
+                    });
+                Idra.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        car=IDRA;
+                        Juno.setBackgroundColor(Color.TRANSPARENT);
+                        Idra.setBackgroundColor(Color.parseColor("#e37c2d"));
+                    }
+                });
                 if(item.driver == null)
                     text1.setText("<no driver>");
                 else if(item.driver.getPorts().size() == 1)
@@ -146,7 +174,7 @@ public class DevicesFragment extends ListFragment {
 
     @Override
     public void onListItemClick(@NonNull ListView l, @NonNull View v, int position, long id) {
-        ListItem item = listItems.get(position-1);
+        ListItem item = listItems.get(0);
         if(item.driver == null) {
             Toast.makeText(getActivity(), "no driver", Toast.LENGTH_SHORT).show();
         } else {
@@ -155,7 +183,11 @@ public class DevicesFragment extends ListFragment {
             args.putInt("port", item.port);
             args.putInt("baud", baudRate);
             args.putBoolean("withIoManager", withIoManager);
-            Fragment fragment = new TerminalFragment();
+            if(car==0) {
+                Toast.makeText(getActivity(), "please select a car", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Fragment fragment = new TerminalFragment(car);
             fragment.setArguments(args);
             getFragmentManager().beginTransaction().replace(R.id.fragment, fragment, "terminal").addToBackStack(null).commit();
         }

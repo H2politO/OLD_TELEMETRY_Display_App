@@ -1,0 +1,243 @@
+Index: usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.hoho.android.usbserial.examples;\r\n\r\nimport android.annotation.SuppressLint;\r\nimport android.app.PendingIntent;\r\nimport android.content.BroadcastReceiver;\r\nimport android.content.Context;\r\nimport android.content.Intent;\r\nimport android.content.IntentFilter;\r\nimport android.hardware.usb.UsbDevice;\r\nimport android.hardware.usb.UsbDeviceConnection;\r\nimport android.hardware.usb.UsbManager;\r\n\r\nimport android.os.Bundle;\r\nimport android.os.Handler;\r\nimport android.os.Looper;\r\nimport android.os.Message;\r\nimport android.view.LayoutInflater;\r\nimport android.view.Menu;\r\nimport android.view.MenuInflater;\r\nimport android.view.MenuItem;\r\nimport android.view.View;\r\nimport android.view.ViewGroup;\r\nimport android.widget.TextView;\r\nimport android.widget.Toast;\r\n\r\nimport androidx.annotation.NonNull;\r\nimport androidx.annotation.Nullable;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport androidx.fragment.app.Fragment;\r\n\r\nimport com.hoho.android.usbserial.driver.UsbSerialDriver;\r\nimport com.hoho.android.usbserial.driver.UsbSerialPort;\r\nimport com.hoho.android.usbserial.driver.UsbSerialProber;\r\nimport com.hoho.android.usbserial.util.SerialInputOutputManager;\r\n\r\nimport org.eclipse.paho.android.service.MqttAndroidClient;\r\nimport org.eclipse.paho.client.mqttv3.MqttConnectOptions;\r\nimport org.eclipse.paho.client.mqttv3.MqttException;\r\n\r\nimport java.io.IOException;\r\nimport java.util.Calendar;\r\nimport java.util.Date;\r\n\r\npublic class TerminalFragment extends Fragment implements SerialInputOutputManager.Listener {\r\n\r\n    private static final int WRITE_WAIT_MILLIS = 2000;\r\n    public static final int THREAD_NUMBER= 7;\r\n\r\n    public static final String SERVERURI=\"ciao\";\r\n    public static final String CLIENTID=\"ciao\";\r\n    private static final String PASSWORD = \"password\";\r\n    private static final String USERNAME = \"DisplayIdra\";\r\n\r\n\r\n    private enum UsbPermission { Unknown, Requested, Granted, Denied }\r\n\r\n    private static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + \".GRANT_USB\";\r\n\r\n    private int deviceId, portNum, baudRate;\r\n    private boolean withIoManager;\r\n\r\n    private final BroadcastReceiver broadcastReceiver;\r\n    private final Handler mainLooper;\r\n\r\n\r\n    Passer[] passers= new Passer[THREAD_NUMBER];\r\n\r\n    ReadingThread[] threads= new ReadingThread[THREAD_NUMBER];\r\n    int threadCounter=0;\r\n    Handler handler=new Handler(Looper.getMainLooper());\r\n\r\n    private MqttAndroidClient MQTTClient;\r\n\r\n    private SerialInputOutputManager usbIoManager;\r\n    private UsbSerialPort usbSerialPort;\r\n    private UsbPermission usbPermission = UsbPermission.Unknown;\r\n    private boolean connected = false;\r\n\r\n    public TerminalFragment() {\r\n        broadcastReceiver = new BroadcastReceiver() {\r\n            @Override\r\n            public void onReceive(Context context, Intent intent) {\r\n                if(INTENT_ACTION_GRANT_USB.equals(intent.getAction())) {\r\n                    usbPermission = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)\r\n                            ? UsbPermission.Granted : UsbPermission.Denied;\r\n                    connect();\r\n                }\r\n            }\r\n        };\r\n        mainLooper = new Handler(Looper.getMainLooper());\r\n    }\r\n\r\n    /*\r\n     * Lifecycle\r\n     */\r\n    @Override\r\n    public void onCreate(@Nullable Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setHasOptionsMenu(true);\r\n        setRetainInstance(true);\r\n        assert getArguments() != null;\r\n        deviceId = getArguments().getInt(\"device\");\r\n        portNum = getArguments().getInt(\"port\");\r\n        baudRate = getArguments().getInt(\"baud\");\r\n        withIoManager = getArguments().getBoolean(\"withIoManager\");\r\n        for(int i=0;i<THREAD_NUMBER;i++) {\r\n            threads[i] = new ReadingThread();\r\n            threads[i].start();\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public void onResume() {\r\n        super.onResume();\r\n        getActivity().registerReceiver(broadcastReceiver, new IntentFilter(INTENT_ACTION_GRANT_USB));\r\n        ((AppCompatActivity)getActivity()).getSupportActionBar().hide();\r\n        if(usbPermission == UsbPermission.Unknown || usbPermission == UsbPermission.Granted)\r\n            mainLooper.post(this::connect);\r\n        Date currentTime = Calendar.getInstance().getTime();\r\n        send(currentTime.toString());\r\n    }\r\n\r\n    @Override\r\n    public void onPause() {\r\n        if(!connected) {\r\n            Toast.makeText(getActivity(), \"not able to connect\", Toast.LENGTH_SHORT).show();\r\n            disconnect();\r\n        }\r\n        getActivity().unregisterReceiver(broadcastReceiver);\r\n        super.onPause();\r\n    }\r\n\r\n    public void onStop() {\r\n        super.onStop();\r\n        ((AppCompatActivity)getActivity()).getSupportActionBar().show();\r\n    }\r\n\r\n    @Override\r\n    public void onDestroy() {\r\n        super.onDestroy();\r\n        for(int i=0;i<THREAD_NUMBER;i++) {\r\n            try {\r\n                threads[i].looper.quit();\r\n                threads[i].join();\r\n            } catch (InterruptedException ignored){}\r\n        }\r\n    }\r\n\r\n    /*\r\n     * UI\r\n     */\r\n    @Override\r\n    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {\r\n        View view = inflater.inflate(R.layout.layout, container, false);\r\n\r\n        TextView purge;\r\n        TextView _short;\r\n        TextView emergences;\r\n        TextView motorOn;\r\n        TextView actuationOn;\r\n        TextView temperature;\r\n        TextView strategy;\r\n        TextView FCVoltage;\r\n        TextView FCCurrent;\r\n        TextView SCVoltage;\r\n        TextView speed;\r\n        MqttConnectOptions MQTTOptions= new MqttConnectOptions();\r\n\r\n        purge = view.findViewById(R.id.Purge);\r\n        _short = view.findViewById(R.id.Short);\r\n        emergences = view.findViewById(R.id.Emergences);\r\n        motorOn = view.findViewById(R.id.MotorOn);\r\n        actuationOn = view.findViewById(R.id.ActuationOn);\r\n        temperature = view.findViewById(R.id.Temperature);\r\n        strategy = view.findViewById(R.id.Strategy);\r\n        FCVoltage = view.findViewById(R.id.FCVoltage);\r\n        FCCurrent = view.findViewById(R.id.FCCurrent);\r\n        SCVoltage = view.findViewById(R.id.VoltageSC);\r\n        speed = view.findViewById(R.id.Speed);\r\n\r\n        try {\r\n            MQTTClient=new MqttAndroidClient(this.getContext(),SERVERURI,CLIENTID);\r\n            MQTTOptions.setUserName(USERNAME);\r\n            MQTTOptions.setPassword(PASSWORD.toCharArray());\r\n            MQTTClient.connect(MQTTOptions);\r\n        } catch (MqttException e) {\r\n            e.printStackTrace();\r\n        }\r\n\r\n        for(int i=0;i<THREAD_NUMBER;i++) {\r\n            passers[i] = new Passer(\r\n                    purge,\r\n                    _short,\r\n                    emergences,\r\n                    motorOn,\r\n                    actuationOn,\r\n                    temperature,\r\n                    strategy,\r\n                    FCVoltage,\r\n                    FCCurrent,\r\n                    SCVoltage,\r\n                    speed,\r\n                    handler,\r\n                    MQTTClient\r\n            );\r\n        }\r\n        return view;\r\n    }\r\n\r\n    @Override\r\n    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {\r\n        inflater.inflate(R.menu.menu_terminal, menu);\r\n    }\r\n\r\n    @Override\r\n    public boolean onOptionsItemSelected(MenuItem item) {\r\n        int id = item.getItemId();\r\n        if (id == R.id.clear) {\r\n            return true;\r\n        } else if( id == R.id.send_break) {\r\n            if(!connected) {\r\n                Toast.makeText(getActivity(), \"not connected\", Toast.LENGTH_SHORT).show();\r\n            } else {\r\n                try {\r\n                    usbSerialPort.setBreak(true);\r\n                    Thread.sleep(100); // should show progress bar instead of blocking UI thread\r\n                    usbSerialPort.setBreak(false);\r\n                } catch(UnsupportedOperationException ignored) {\r\n                    Toast.makeText(getActivity(), \"BREAK not supported\", Toast.LENGTH_SHORT).show();\r\n                } catch(Exception e) {\r\n                    Toast.makeText(getActivity(), \"BREAK failed: \" + e.getMessage(), Toast.LENGTH_SHORT).show();\r\n                }\r\n            }\r\n            return true;\r\n        } else {\r\n            return super.onOptionsItemSelected(item);\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public void onNewData(byte[] data) {\r\n        mainLooper.post(() -> receive(data));\r\n    }\r\n\r\n    @Override\r\n    public void onRunError(Exception e) {\r\n        mainLooper.post(this::disconnect);\r\n    }\r\n\r\n    private void connect() {\r\n        UsbDevice device = null;\r\n        UsbManager usbManager = (UsbManager) getActivity().getSystemService(Context.USB_SERVICE);\r\n        for(UsbDevice v : usbManager.getDeviceList().values())\r\n            if(v.getDeviceId() == deviceId)\r\n                device = v;\r\n        if(device == null) {\r\n            return;\r\n        }\r\n        UsbSerialDriver driver = UsbSerialProber.getDefaultProber().probeDevice(device);\r\n        if(driver == null) {\r\n            driver = CustomProber.getCustomProber().probeDevice(device);\r\n        }\r\n        if(driver == null) {\r\n            return;\r\n        }\r\n        if(driver.getPorts().size() < portNum) {\r\n            return;\r\n        }\r\n        usbSerialPort = driver.getPorts().get(portNum);\r\n        UsbDeviceConnection usbConnection = usbManager.openDevice(driver.getDevice());\r\n        if(usbConnection == null && usbPermission == UsbPermission.Unknown && !usbManager.hasPermission(driver.getDevice())) {\r\n            usbPermission = UsbPermission.Requested;\r\n            PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(getActivity(), 0, new Intent(INTENT_ACTION_GRANT_USB), 0);\r\n            usbManager.requestPermission(driver.getDevice(), usbPermissionIntent);\r\n            return;\r\n        }\r\n        if(usbConnection == null)\r\n            return;\r\n        try {\r\n            usbSerialPort.open(usbConnection);\r\n            usbSerialPort.setParameters(baudRate, 8, 1, UsbSerialPort.PARITY_NONE);\r\n            if(withIoManager) {\r\n                usbIoManager = new SerialInputOutputManager(usbSerialPort, this);\r\n                usbIoManager.start();\r\n            }\r\n            connected = true;\r\n        } catch (Exception e) {\r\n            Toast.makeText(getActivity(), \"not able to connect\", Toast.LENGTH_SHORT).show();\r\n            disconnect();\r\n        }\r\n    }\r\n\r\n    private void disconnect() {\r\n        connected = false;\r\n        if(usbIoManager != null) {\r\n            usbIoManager.setListener(null);\r\n            usbIoManager.stop();\r\n        }\r\n        usbIoManager = null;\r\n        try {\r\n            usbSerialPort.close();\r\n        } catch (IOException ignored) {}\r\n        usbSerialPort = null;\r\n    }\r\n\r\n    private void send(String str) {\r\n        if(!connected) {\r\n            return;\r\n        }\r\n        try {\r\n            byte[] data =  str.getBytes();\r\n            usbSerialPort.write(data, WRITE_WAIT_MILLIS);\r\n        } catch (Exception e) {\r\n            onRunError(e);\r\n        }\r\n    }\r\n\r\n    //spurghi->verde #00FF00\r\n    //corti->giallo #FFFF00\r\n    //motorOn->rosso #FF0000\r\n    //supercap->viola #FF00FF\r\n    //Attuazione->blu #0000FF\r\n    @SuppressLint(\"DefaultLocale\")\r\n    private void receive(byte[] data) {\r\n        if (data.length == 5 || data.length == 6 ) {\r\n            Message msg = Message.obtain();\r\n            passers[threadCounter].setData(data);\r\n            msg.obj = passers[threadCounter];\r\n            threads[threadCounter].handler.sendMessage(msg);\r\n            threadCounter = (threadCounter + 1) % THREAD_NUMBER;\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java b/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java
+--- a/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java	
++++ b/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/TerminalFragment.java	
+@@ -34,6 +34,7 @@
+ import com.hoho.android.usbserial.util.SerialInputOutputManager;
+ 
+ import org.eclipse.paho.android.service.MqttAndroidClient;
++import org.eclipse.paho.client.mqttv3.MqttClient;
+ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+ import org.eclipse.paho.client.mqttv3.MqttException;
+ 
+@@ -46,9 +47,9 @@
+     private static final int WRITE_WAIT_MILLIS = 2000;
+     public static final int THREAD_NUMBER= 7;
+ 
+-    public static final String SERVERURI="ciao";
+-    public static final String CLIENTID="ciao";
+-    private static final String PASSWORD = "password";
++    public static final String SERVERURL="7f182d708d6041f88d49cffa1aae6f6d.s1.eu.hivemq.cloud";
++    public static final String CLIENTID= MqttClient.generateClientId();
++    private static final String PASSWORD = "H2display";
+     private static final String USERNAME = "DisplayIdra";
+ 
+ 
+@@ -153,39 +154,34 @@
+     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+         View view = inflater.inflate(R.layout.layout, container, false);
+ 
+-        TextView purge;
+-        TextView _short;
+-        TextView emergences;
+-        TextView motorOn;
+-        TextView actuationOn;
+-        TextView temperature;
+-        TextView strategy;
+-        TextView FCVoltage;
+-        TextView FCCurrent;
+-        TextView SCVoltage;
+-        TextView speed;
++        TextView purge = view.findViewById(R.id.Purge);
++        TextView _short =  view.findViewById(R.id.Short);
++        TextView emergences = view.findViewById(R.id.Emergences);
++        TextView motorOn = view.findViewById(R.id.MotorOn);
++        TextView actuationOn = view.findViewById(R.id.ActuationOn);
++        TextView temperature = view.findViewById(R.id.Temperature);
++        TextView strategy = view.findViewById(R.id.Strategy);
++        TextView FCVoltage = view.findViewById(R.id.FCVoltage);
++        TextView FCCurrent = view.findViewById(R.id.FCCurrent);
++        TextView SCVoltage = view.findViewById(R.id.VoltageSC);
++        TextView speed = view.findViewById(R.id.Speed);
++
+         MqttConnectOptions MQTTOptions= new MqttConnectOptions();
+ 
+-        purge = view.findViewById(R.id.Purge);
+-        _short = view.findViewById(R.id.Short);
+-        emergences = view.findViewById(R.id.Emergences);
+-        motorOn = view.findViewById(R.id.MotorOn);
+-        actuationOn = view.findViewById(R.id.ActuationOn);
+-        temperature = view.findViewById(R.id.Temperature);
+-        strategy = view.findViewById(R.id.Strategy);
+-        FCVoltage = view.findViewById(R.id.FCVoltage);
+-        FCCurrent = view.findViewById(R.id.FCCurrent);
+-        SCVoltage = view.findViewById(R.id.VoltageSC);
+-        speed = view.findViewById(R.id.Speed);
+-
+-        try {
+-            MQTTClient=new MqttAndroidClient(this.getContext(),SERVERURI,CLIENTID);
+-            MQTTOptions.setUserName(USERNAME);
+-            MQTTOptions.setPassword(PASSWORD.toCharArray());
+-            MQTTClient.connect(MQTTOptions);
+-        } catch (MqttException e) {
+-            e.printStackTrace();
++        boolean ok;
++        do {
++            ok=false;
++            try {
++                MQTTClient = new MqttAndroidClient(this.getContext().getApplicationContext(), SERVERURL, CLIENTID);
++                MQTTOptions.setUserName(USERNAME);
++                MQTTOptions.setPassword(PASSWORD.toCharArray());
++                MQTTOptions.setCleanSession(true);
++                MQTTClient.connect(MQTTOptions);
++            } catch (MqttException e) {
++                ok = true;
++            }
+         }
++        while(!ok);
+ 
+         for(int i=0;i<THREAD_NUMBER;i++) {
+             passers[i] = new Passer(
+@@ -315,11 +311,6 @@
+         }
+     }
+ 
+-    //spurghi->verde #00FF00
+-    //corti->giallo #FFFF00
+-    //motorOn->rosso #FF0000
+-    //supercap->viola #FF00FF
+-    //Attuazione->blu #0000FF
+     @SuppressLint("DefaultLocale")
+     private void receive(byte[] data) {
+         if (data.length == 5 || data.length == 6 ) {
+Index: usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/myHandler.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.hoho.android.usbserial.examples;\r\n\r\nimport android.annotation.SuppressLint;\r\nimport android.graphics.Color;\r\nimport android.os.Build;\r\nimport android.os.Handler;\r\nimport android.os.Message;\r\n\r\nimport androidx.annotation.NonNull;\r\nimport androidx.annotation.RequiresApi;\r\n\r\nimport org.eclipse.paho.client.mqttv3.MqttException;\r\nimport org.eclipse.paho.client.mqttv3.MqttMessage;\r\n\r\nimport java.nio.ByteBuffer;\r\nimport java.nio.charset.StandardCharsets;\r\n\r\npublic class myHandler extends Handler {\r\n\r\n    @RequiresApi(api = Build.VERSION_CODES.KITKAT)\r\n    @SuppressLint(\"DefaultLocale\")\r\n    @Override\r\n    public void handleMessage(@NonNull Message msg) {\r\n        Passer passer= (Passer) msg.obj;\r\n        byte[] data= passer.data;\r\n        int id = byteToInt(data[0]);\r\n        MqttMessage MQTTmessage=new MqttMessage();\r\n        MQTTmessage.setRetained(true);\r\n        MQTTmessage.setQos(0);\r\n        switch(id){\r\n            case 16://service board: emergences\r\n                boolean emActive=false;\r\n                String emString=\"\";\r\n                boolean h2Emergency=false;\r\n                for(int i=1;i<5;i++) {\r\n                    if (data[i] != 0) {\r\n                        switch (i) {\r\n                            case 1:\r\n                                emString += \"H2 \";\r\n                                h2Emergency = true;\r\n                                break;\r\n                            case 2:\r\n                                emString += \"Deadman \";\r\n                                break;\r\n                            case 3:\r\n                                emString += \"External \";\r\n                                break;\r\n                            case 4:\r\n                                emString += \"Internal\";\r\n                                break;\r\n                        }\r\n                        emActive = true;\r\n                    }\r\n                }\r\n                if(emActive) {\r\n                    String finalEm_string = emString;\r\n                    passer.handler.post(() -> passer.emergences.setText(finalEm_string));\r\n                    if(h2Emergency)\r\n                        passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor(\"#0000FF\")));\r\n                    else\r\n                        passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor(\"#FF0000\")));\r\n                    try {\r\n                        MQTTmessage.setPayload(emString.getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"Emergency\",MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                else {\r\n                    passer.handler.post(() -> passer.emergences.setText(\"E\"));\r\n                    passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.TRANSPARENT));\r\n                }\r\n                    break;\r\n            case 17://service board: speed\r\n                float speed=byteToFloat(data[4],data[3],data[2],data[1]);\r\n                passer.handler.post(() -> passer.speed.setText(String.format(\"%.2f Km/h\",speed)));\r\n                try {\r\n                    MQTTmessage.setPayload(String.valueOf(speed).getBytes(StandardCharsets.UTF_8));\r\n                    passer.MQTTClient.publish(\"Speed\",MQTTmessage);\r\n                } catch (MqttException e) {\r\n                    e.printStackTrace();\r\n                }\r\n                break;\r\n            case 18://service board: temperature\r\n                float temperature=byteToFloat(data[4],data[3],data[2],data[1]);\r\n                passer.handler.post(() -> passer.temperature.setText(String.format(\"%.2f C°\",temperature)));\r\n                try {\r\n                    MQTTmessage.setPayload(String.valueOf(temperature).getBytes(StandardCharsets.UTF_8));\r\n                    passer.MQTTClient.publish(\"Temperature\",MQTTmessage);\r\n                } catch (MqttException e) {\r\n                    e.printStackTrace();\r\n                }\r\n                break;\r\n            case 19://service board: FCVoltage\r\n                float FCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);\r\n                passer.handler.post(() -> passer.FCVoltage.setText(String.format(\"%.2f V\",FCVoltage)));\r\n                try {\r\n                    MQTTmessage.setPayload(String.valueOf(FCVoltage).getBytes(StandardCharsets.UTF_8));\r\n                    passer.MQTTClient.publish(\"FCVoltage\",MQTTmessage);\r\n                } catch (MqttException e) {\r\n                    e.printStackTrace();\r\n                }\r\n                break;\r\n            case 20://service board: SCVoltage\r\n                float SCVoltage=byteToFloat(data[4],data[3],data[2],data[1]);\r\n                passer.handler.post(() -> passer.SCVoltage.setText(String.format(\"%.2f V\",SCVoltage)));\r\n                try {\r\n                    MQTTmessage.setPayload(String.valueOf(SCVoltage).getBytes(StandardCharsets.UTF_8));\r\n                    passer.MQTTClient.publish(\"SCVoltage\",MQTTmessage);\r\n                } catch (MqttException e) {\r\n                    e.printStackTrace();\r\n                }\r\n                break;\r\n            case 32://wheel :\r\n                int strategy=byteToInt(data[1]);\r\n                passer.handler.post(() -> passer.strategy.setText(String.format(\"ST: %d\",strategy)));\r\n                try {\r\n                    MQTTmessage.setPayload(String.valueOf(strategy).getBytes(StandardCharsets.UTF_8));\r\n                    passer.MQTTClient.publish(\"Strategy\",MQTTmessage);\r\n                } catch (MqttException e) {\r\n                    e.printStackTrace();\r\n                }\r\n                if(data[2]!=0) { //motor on\r\n                    passer.handler.post(() -> passer.motorOn.setBackgroundColor(Color.parseColor(\"#FF0000\")));\r\n                    try {\r\n                        MQTTmessage.setPayload(\"1\".getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"MotorOn\", MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                else {           //motor off\r\n                    passer.handler.post(() -> passer.motorOn.setBackgroundColor(Color.TRANSPARENT));\r\n                    try {\r\n                        MQTTmessage.setPayload(\"0\".getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"MotorOn\", MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                if(data[3]!=0) {  //purge on\r\n                    passer.handler.post(() -> passer.purge.setBackgroundColor(Color.parseColor(\"#00FF00\")));\r\n                    try {\r\n                        MQTTmessage.setPayload(\"1\".getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"Purge\", MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                else {            //purge off\r\n                    passer.handler.post(() -> passer.purge.setBackgroundColor(Color.TRANSPARENT));\r\n                    try {\r\n                        MQTTmessage.setPayload(\"0\".getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"Purge\", MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                if(data[4]!=0) {  //powerMode on\r\n                    passer.handler.post(() -> passer.SCVoltage.setBackgroundColor(Color.parseColor(\"#FF00FF\")));\r\n                    try {\r\n                        MQTTmessage.setPayload(\"1\".getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"PowerMode\", MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                else {            //powerMode off\r\n                    passer.handler.post(() -> passer.SCVoltage.setBackgroundColor(Color.TRANSPARENT));\r\n                    try {\r\n                        MQTTmessage.setPayload(\"0\".getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"PowerMode\", MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                if(data[5]!=0) {  //short on\r\n                    passer.handler.post(() -> passer._short.setBackgroundColor(Color.parseColor(\"#FFFF00\")));\r\n                    try {\r\n                        MQTTmessage.setPayload(\"1\".getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"Short\", MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                else {          //short off\r\n                    passer.handler.post(() -> passer._short.setBackgroundColor(Color.TRANSPARENT));\r\n                    try {\r\n                        MQTTmessage.setPayload(\"1\".getBytes(StandardCharsets.UTF_8));\r\n                        passer.MQTTClient.publish(\"Short\", MQTTmessage);\r\n                    } catch (MqttException e) {\r\n                        e.printStackTrace();\r\n                    }\r\n                }\r\n                break;\r\n            case 48://actuation board: FCCurrent\r\n                float FCCurrent=byteToFloat(data[4],data[3],data[2],data[1]);\r\n                passer.handler.post(() -> passer.FCCurrent.setText(String.format(\"%.2f A\",FCCurrent)));\r\n                try {\r\n                    MQTTmessage.setPayload(String.valueOf(FCCurrent).getBytes(StandardCharsets.UTF_8));\r\n                    passer.MQTTClient.publish(\"FCCurrent\",MQTTmessage);\r\n                } catch (MqttException e) {\r\n                    e.printStackTrace();\r\n                }\r\n                break;\r\n            case 63://actuation board heartbeat\r\n                passer.handler.post(() -> passer.actuationOn.setBackgroundColor(Color.parseColor(\"#0000FF\")));\r\n                try {\r\n                    MQTTmessage.setPayload(\"1\".getBytes(StandardCharsets.UTF_8));\r\n                    passer.MQTTClient.publish(\"ActuationOn\", MQTTmessage);\r\n                } catch (MqttException e) {\r\n                    e.printStackTrace();\r\n                }\r\n                if(data[1]<1)\r\n                    passer.handler.post(() -> passer.actuationOn.setBackgroundColor(Color.TRANSPARENT));\r\n                try {\r\n                    MQTTmessage.setPayload(\"0\".getBytes(StandardCharsets.UTF_8));\r\n                    passer.MQTTClient.publish(\"ActuationOn\", MQTTmessage);\r\n                } catch (MqttException e) {\r\n                    e.printStackTrace();\r\n                }\r\n                break;\r\n            default:\r\n                break;\r\n        }\r\n    }\r\n\r\n    public int byteToInt(byte... data) {\r\n        int val = 0;\r\n        for (byte datum : data) {\r\n            val = val << 8;\r\n            val = val | (datum & 0xFF);\r\n        }\r\n        return val;\r\n    }\r\n    public float byteToFloat(byte... data) {\r\n        return ByteBuffer.wrap(data).getFloat();\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/myHandler.java b/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/myHandler.java
+--- a/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/myHandler.java	
++++ b/usbSerialExamples/src/main/java/com/hoho/android/usbserial/examples/myHandler.java	
+@@ -18,7 +18,7 @@
+ public class myHandler extends Handler {
+ 
+     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+-    @SuppressLint("DefaultLocale")
++    @SuppressLint({"DefaultLocale", "ObsoleteSdkInt", "SupportAnnotationUsage"})
+     @Override
+     public void handleMessage(@NonNull Message msg) {
+         Passer passer= (Passer) msg.obj;
+@@ -30,37 +30,37 @@
+         switch(id){
+             case 16://service board: emergences
+                 boolean emActive=false;
+-                String emString="";
++                StringBuilder emString= new StringBuilder();
+                 boolean h2Emergency=false;
+                 for(int i=1;i<5;i++) {
+                     if (data[i] != 0) {
+                         switch (i) {
+                             case 1:
+-                                emString += "H2 ";
++                                emString.append("H2 ");
+                                 h2Emergency = true;
+                                 break;
+                             case 2:
+-                                emString += "Deadman ";
++                                emString.append("Deadman ");
+                                 break;
+                             case 3:
+-                                emString += "External ";
++                                emString.append("External ");
+                                 break;
+                             case 4:
+-                                emString += "Internal";
++                                emString.append("Internal");
+                                 break;
+                         }
+                         emActive = true;
+                     }
+                 }
+                 if(emActive) {
+-                    String finalEm_string = emString;
++                    String finalEm_string = emString.toString();
+                     passer.handler.post(() -> passer.emergences.setText(finalEm_string));
+                     if(h2Emergency)
+                         passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor("#0000FF")));
+                     else
+                         passer.handler.post(() -> passer.emergences.setBackgroundColor(Color.parseColor("#FF0000")));
+                     try {
+-                        MQTTmessage.setPayload(emString.getBytes(StandardCharsets.UTF_8));
++                        MQTTmessage.setPayload(emString.toString().getBytes(StandardCharsets.UTF_8));
+                         passer.MQTTClient.publish("Emergency",MQTTmessage);
+                     } catch (MqttException e) {
+                         e.printStackTrace();
+Index: .idea/inspectionProfiles/Project_Default.xml
+===================================================================
+diff --git a/.idea/inspectionProfiles/Project_Default.xml b/.idea/inspectionProfiles/Project_Default.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/inspectionProfiles/Project_Default.xml	
+@@ -0,0 +1,6 @@
++<component name="InspectionProjectProfileManager">
++  <profile version="1.0">
++    <option name="myName" value="Project Default" />
++    <inspection_tool class="Deprecation" enabled="false" level="WARNING" enabled_by_default="false" />
++  </profile>
++</component>
+\ No newline at end of file
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"DesignSurface\">\r\n    <option name=\"filePathToZoomLevelMap\">\r\n      <map>\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/drawable/ic_delete_white_24dp.xml\" value=\"0.1365\" />\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/drawable/ic_send_white_24dp.xml\" value=\"0.1365\" />\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/Display.xml\" value=\"0.36666666666666664\" />\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/activity_main.xml\" value=\"0.18\" />\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/device_list_header.xml\" value=\"0.36666666666666664\" />\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/device_list_item.xml\" value=\"0.36666666666666664\" />\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/fragment_terminal.xml\" value=\"0.36666666666666664\" />\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/layout.xml\" value=\"0.5\" />\r\n        <entry key=\"..\\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/menu/menu_devices.xml\" value=\"0.36666666666666664\" />\r\n      </map>\r\n    </option>\r\n  </component>\r\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\r\n  <component name=\"NullableNotNullManager\">\r\n    <option name=\"myDefaultNullable\" value=\"androidx.annotation.Nullable\" />\r\n    <option name=\"myDefaultNotNull\" value=\"androidx.annotation.NonNull\" />\r\n    <option name=\"myNullables\">\r\n      <value>\r\n        <list size=\"15\">\r\n          <item index=\"0\" class=\"java.lang.String\" itemvalue=\"org.jetbrains.annotations.Nullable\" />\r\n          <item index=\"1\" class=\"java.lang.String\" itemvalue=\"javax.annotation.Nullable\" />\r\n          <item index=\"2\" class=\"java.lang.String\" itemvalue=\"javax.annotation.CheckForNull\" />\r\n          <item index=\"3\" class=\"java.lang.String\" itemvalue=\"edu.umd.cs.findbugs.annotations.Nullable\" />\r\n          <item index=\"4\" class=\"java.lang.String\" itemvalue=\"android.support.annotation.Nullable\" />\r\n          <item index=\"5\" class=\"java.lang.String\" itemvalue=\"androidx.annotation.Nullable\" />\r\n          <item index=\"6\" class=\"java.lang.String\" itemvalue=\"androidx.annotation.RecentlyNullable\" />\r\n          <item index=\"7\" class=\"java.lang.String\" itemvalue=\"android.annotation.Nullable\" />\r\n          <item index=\"8\" class=\"java.lang.String\" itemvalue=\"org.checkerframework.checker.nullness.qual.Nullable\" />\r\n          <item index=\"9\" class=\"java.lang.String\" itemvalue=\"org.checkerframework.checker.nullness.compatqual.NullableDecl\" />\r\n          <item index=\"10\" class=\"java.lang.String\" itemvalue=\"org.checkerframework.checker.nullness.compatqual.NullableType\" />\r\n          <item index=\"11\" class=\"java.lang.String\" itemvalue=\"com.android.annotations.Nullable\" />\r\n          <item index=\"12\" class=\"java.lang.String\" itemvalue=\"org.eclipse.jdt.annotation.Nullable\" />\r\n          <item index=\"13\" class=\"java.lang.String\" itemvalue=\"io.reactivex.annotations.Nullable\" />\r\n          <item index=\"14\" class=\"java.lang.String\" itemvalue=\"io.reactivex.rxjava3.annotations.Nullable\" />\r\n        </list>\r\n      </value>\r\n    </option>\r\n    <option name=\"myNotNulls\">\r\n      <value>\r\n        <list size=\"14\">\r\n          <item index=\"0\" class=\"java.lang.String\" itemvalue=\"org.jetbrains.annotations.NotNull\" />\r\n          <item index=\"1\" class=\"java.lang.String\" itemvalue=\"javax.annotation.Nonnull\" />\r\n          <item index=\"2\" class=\"java.lang.String\" itemvalue=\"edu.umd.cs.findbugs.annotations.NonNull\" />\r\n          <item index=\"3\" class=\"java.lang.String\" itemvalue=\"android.support.annotation.NonNull\" />\r\n          <item index=\"4\" class=\"java.lang.String\" itemvalue=\"androidx.annotation.NonNull\" />\r\n          <item index=\"5\" class=\"java.lang.String\" itemvalue=\"androidx.annotation.RecentlyNonNull\" />\r\n          <item index=\"6\" class=\"java.lang.String\" itemvalue=\"android.annotation.NonNull\" />\r\n          <item index=\"7\" class=\"java.lang.String\" itemvalue=\"org.checkerframework.checker.nullness.qual.NonNull\" />\r\n          <item index=\"8\" class=\"java.lang.String\" itemvalue=\"org.checkerframework.checker.nullness.compatqual.NonNullDecl\" />\r\n          <item index=\"9\" class=\"java.lang.String\" itemvalue=\"org.checkerframework.checker.nullness.compatqual.NonNullType\" />\r\n          <item index=\"10\" class=\"java.lang.String\" itemvalue=\"com.android.annotations.NonNull\" />\r\n          <item index=\"11\" class=\"java.lang.String\" itemvalue=\"org.eclipse.jdt.annotation.NonNull\" />\r\n          <item index=\"12\" class=\"java.lang.String\" itemvalue=\"io.reactivex.annotations.NonNull\" />\r\n          <item index=\"13\" class=\"java.lang.String\" itemvalue=\"io.reactivex.rxjava3.annotations.NonNull\" />\r\n        </list>\r\n      </value>\r\n    </option>\r\n  </component>\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_11\" project-jdk-name=\"1.8\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\r\n  </component>\r\n  <component name=\"ProjectType\">\r\n    <option name=\"id\" value=\"Android\" />\r\n  </component>\r\n  <component name=\"VisualizationToolProject\">\r\n    <option name=\"state\">\r\n      <ProjectState>\r\n        <option name=\"scale\" value=\"0.1\" />\r\n      </ProjectState>\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	
++++ b/.idea/misc.xml	
+@@ -10,7 +10,7 @@
+         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/device_list_header.xml" value="0.36666666666666664" />
+         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/device_list_item.xml" value="0.36666666666666664" />
+         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/fragment_terminal.xml" value="0.36666666666666664" />
+-        <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/layout.xml" value="0.5" />
++        <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/layout/layout.xml" value="0.33" />
+         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/menu/menu_devices.xml" value="0.36666666666666664" />
+       </map>
+     </option>
+Index: .idea/codestream.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"CodeStream\">\r\n    <option name=\"webViewContext\" value=\"{&quot;chatProviderAccess&quot;:&quot;strict&quot;,&quot;currentTeamId&quot;:&quot;&quot;,&quot;currentStreamId&quot;:&quot;&quot;,&quot;pullRequestCheckoutBranch&quot;:false,&quot;isRepositioning&quot;:false,&quot;onboardStep&quot;:0,&quot;panelStack&quot;:[&quot;landing-redirect&quot;],&quot;hasFocus&quot;:false,&quot;channelFilter&quot;:&quot;all&quot;,&quot;channelsMuteAll&quot;:false,&quot;codemarkFileFilter&quot;:&quot;all&quot;,&quot;codemarkTypeFilter&quot;:&quot;all&quot;,&quot;codemarkTagFilter&quot;:&quot;all&quot;,&quot;codemarkBranchFilter&quot;:&quot;all&quot;,&quot;codemarkAuthorFilter&quot;:&quot;all&quot;,&quot;codemarksFileViewStyle&quot;:&quot;inline&quot;,&quot;codemarksShowArchived&quot;:false,&quot;codemarksShowResolved&quot;:false,&quot;codemarksWrapComments&quot;:false,&quot;showFeedbackSmiley&quot;:true,&quot;route&quot;:{&quot;name&quot;:&quot;newUserEntry&quot;,&quot;params&quot;:{}},&quot;spatialViewShowPRComments&quot;:false,&quot;__teamless__&quot;:{&quot;selectedRegion&quot;:&quot;us&quot;},&quot;sessionStart&quot;:1652947020803}\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/codestream.xml b/.idea/codestream.xml
+--- a/.idea/codestream.xml	
++++ b/.idea/codestream.xml	
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="CodeStream">
+-    <option name="webViewContext" value="{&quot;chatProviderAccess&quot;:&quot;strict&quot;,&quot;currentTeamId&quot;:&quot;&quot;,&quot;currentStreamId&quot;:&quot;&quot;,&quot;pullRequestCheckoutBranch&quot;:false,&quot;isRepositioning&quot;:false,&quot;onboardStep&quot;:0,&quot;panelStack&quot;:[&quot;landing-redirect&quot;],&quot;hasFocus&quot;:false,&quot;channelFilter&quot;:&quot;all&quot;,&quot;channelsMuteAll&quot;:false,&quot;codemarkFileFilter&quot;:&quot;all&quot;,&quot;codemarkTypeFilter&quot;:&quot;all&quot;,&quot;codemarkTagFilter&quot;:&quot;all&quot;,&quot;codemarkBranchFilter&quot;:&quot;all&quot;,&quot;codemarkAuthorFilter&quot;:&quot;all&quot;,&quot;codemarksFileViewStyle&quot;:&quot;inline&quot;,&quot;codemarksShowArchived&quot;:false,&quot;codemarksShowResolved&quot;:false,&quot;codemarksWrapComments&quot;:false,&quot;showFeedbackSmiley&quot;:true,&quot;route&quot;:{&quot;name&quot;:&quot;newUserEntry&quot;,&quot;params&quot;:{}},&quot;spatialViewShowPRComments&quot;:false,&quot;__teamless__&quot;:{&quot;selectedRegion&quot;:&quot;us&quot;},&quot;sessionStart&quot;:1652947020803}" />
++    <option name="webViewContext" value="{&quot;chatProviderAccess&quot;:&quot;strict&quot;,&quot;currentTeamId&quot;:&quot;&quot;,&quot;currentStreamId&quot;:&quot;&quot;,&quot;pullRequestCheckoutBranch&quot;:false,&quot;isRepositioning&quot;:false,&quot;onboardStep&quot;:0,&quot;panelStack&quot;:[&quot;landing-redirect&quot;],&quot;hasFocus&quot;:false,&quot;channelFilter&quot;:&quot;all&quot;,&quot;channelsMuteAll&quot;:false,&quot;codemarkFileFilter&quot;:&quot;all&quot;,&quot;codemarkTypeFilter&quot;:&quot;all&quot;,&quot;codemarkTagFilter&quot;:&quot;all&quot;,&quot;codemarkBranchFilter&quot;:&quot;all&quot;,&quot;codemarkAuthorFilter&quot;:&quot;all&quot;,&quot;codemarksFileViewStyle&quot;:&quot;inline&quot;,&quot;codemarksShowArchived&quot;:false,&quot;codemarksShowResolved&quot;:false,&quot;codemarksWrapComments&quot;:false,&quot;showFeedbackSmiley&quot;:true,&quot;route&quot;:{&quot;name&quot;:&quot;newUserEntry&quot;,&quot;params&quot;:{}},&quot;spatialViewShowPRComments&quot;:false,&quot;__teamless__&quot;:{&quot;selectedRegion&quot;:&quot;us&quot;},&quot;sessionStart&quot;:1653573476766}" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Top-level gradle script.\r\n\r\nbuildscript {\r\n    repositories {\r\n        mavenCentral()\r\n        google()\r\n    }\r\n    dependencies {\r\n        classpath 'com.android.tools.build:gradle:7.2.0'\r\n    }\r\n}\r\n\r\nallprojects {\r\n    repositories {\r\n        mavenCentral()\r\n        google()\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.gradle b/build.gradle
+--- a/build.gradle	
++++ b/build.gradle	
+@@ -14,5 +14,8 @@
+     repositories {
+         mavenCentral()
+         google()
++        maven {
++            url "https://repo.eclipse.org/content/repositories/paho-releases/"
++        }
+     }
+ }

@@ -7,7 +7,7 @@ import android.os.Message;
 
 import androidx.annotation.NonNull;
 
-public class myHandler extends Handler {
+public class myHandlerJuno extends Handler {
 
     @SuppressLint({"DefaultLocale", "SetTextI18n"})
     @Override
