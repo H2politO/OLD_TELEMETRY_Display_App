@@ -7,7 +7,7 @@ import android.os.Looper;
 
 public class IdraThread extends Thread{
 
-    public Handler handler;
+    public Handler handler= new myHandlerIdra();
     public Looper looper;
 
     @Override
@@ -15,8 +15,6 @@ public class IdraThread extends Thread{
         Looper.prepare();
 
         looper=Looper.myLooper();
-
-        handler=new myHandlerIdra();
 
         Looper.loop();
     }

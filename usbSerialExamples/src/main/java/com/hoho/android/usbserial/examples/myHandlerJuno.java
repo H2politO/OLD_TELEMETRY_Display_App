@@ -7,14 +7,28 @@ import android.os.Message;
 
 import androidx.annotation.NonNull;
 
+import org.eclipse.paho.android.service.MqttAndroidClient;
+
+
 public class myHandlerJuno extends Handler {
+
+    public static final String SERVERURI = "ciao";
+    public static final String CLIENTID="ciao";
+    private static final String PASSWORD = "password";
+    private static final String USERNAME = "DisplayIdra";
+    MqttAndroidClient client;
 
     @SuppressLint({"DefaultLocale", "SetTextI18n"})
     @Override
     public void handleMessage(@NonNull Message msg) {
         Passer passer= (Passer) msg.obj;
+        int initialized=msg.what;
         byte[] data= passer.data;
         int id = byteToInt(data[0]);
+        if(initialized==0){
+            //modify constants defined on top
+            return;
+        }
         switch(id) {
             case 17://emergences fromm the safe board
                 if(data[4]!=0) {
@@ -148,6 +162,7 @@ public class myHandlerJuno extends Handler {
             default:
                 break;
         }
+        return;
     }
 
     public int byteToInt(byte... data) {

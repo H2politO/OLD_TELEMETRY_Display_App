@@ -41,16 +41,13 @@ import org.eclipse.paho.android.service.MqttAndroidClient;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 
 public class TerminalFragment extends Fragment implements SerialInputOutputManager.Listener {
 
     private static final int WRITE_WAIT_MILLIS = 2000;
-    public static final int THREAD_NUMBER= 7;
+    public static final int THREAD_NUMBER= 18;
 
-    public static final String SERVERURI = "ciao";
-    public static final String CLIENTID="ciao";
-    private static final String PASSWORD = "password";
-    private static final String USERNAME = "DisplayIdra";
     private int car;
 
 
@@ -109,12 +106,16 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
         baudRate = getArguments().getInt("baud");
         withIoManager = getArguments().getBoolean("withIoManager");
         for(int i=0;i<THREAD_NUMBER;i++) {
+            Message msg = Message.obtain();
+            msg.what=0;
+            msg.obj=getContext().getApplicationContext();
             if(car==JUNO) {
                 junoThreads[i] = new JunoThread();
                 junoThreads[i].start();
             }else {
                 idraThreads[i] = new IdraThread();
                 idraThreads[i].start();
+                idraThreads[i].handler.sendMessage(msg);
             }
         }
     }
@@ -155,7 +156,8 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                     idraThreads[i].join();
                 }
                 else{
-
+                    junoThreads[i].looper.quit();
+                    junoThreads[i].join();
                 }
             } catch (InterruptedException ignored){}
         }
@@ -181,6 +183,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             TextView FCVoltage;
             TextView FCCurrent;
             TextView SCVoltage;
+            TextView powerModeBackground;
             TextView speed;
 
             purge = view.findViewById(R.id.Purge);
@@ -194,6 +197,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             FCCurrent = view.findViewById(R.id.FCCurrent);
             SCVoltage = view.findViewById(R.id.VoltageSC);
             speed = view.findViewById(R.id.Speed);
+            powerModeBackground= view.findViewById(R.id.PowerModeBackground);
 
             for (int i = 0; i < THREAD_NUMBER; i++) {
                 passers[i] = new Passer(
@@ -208,6 +212,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
                         FCCurrent,
                         SCVoltage,
                         speed,
+                        powerModeBackground,
                         handler
                 );
             }
@@ -378,6 +383,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             Message msg = Message.obtain();
             passers[threadCounter].setData(data);
             msg.obj = passers[threadCounter];
+            msg.what=1;
             if(car==IDRA)
                 idraThreads[threadCounter].handler.sendMessage(msg);
             else

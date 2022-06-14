@@ -38,6 +38,7 @@
             android:layout_weight="1"
             android:scaleType="fitCenter"
             android:adjustViewBounds="true"
+            android:background="#000000"
             app:srcCompat="@drawable/juno" />
 
         <ImageButton
@@ -47,6 +48,7 @@
             android:layout_weight="1"
             android:scaleType="fitCenter"
             android:adjustViewBounds="true"
+            android:background="#000000"
             app:srcCompat="@drawable/idra" />
     </LinearLayout>
 

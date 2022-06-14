@@ -37,7 +37,7 @@ public class Passer {
     public TextView engineEnable;
     public TextView limpMode;
     public Handler handler;
-    //public MqttAndroidClient MQTTClient;
+    public TextView powerModeBackground;
 
     public Passer(TextView purge,
                   TextView _short,
@@ -50,6 +50,7 @@ public class Passer {
                   TextView FCCurrent,
                   TextView SCVoltage,
                   TextView speed,
+                  TextView powerModeBackground,
                   Handler handler)
     {
 
@@ -64,8 +65,8 @@ public class Passer {
         this.FCCurrent = FCCurrent;
         this.SCVoltage = SCVoltage;
         this.speed = speed;
+        this.powerModeBackground= powerModeBackground;
         this.handler= handler;
-
     }
 
     public Passer(TextView TPS,
@@ -85,7 +86,8 @@ public class Passer {
                   TextView batteryVoltage,
                   TextView engineEnable,
                   TextView limpMode,
-                  Handler handler) {
+                  Handler handler)
+    {
 
         this.TPS = TPS;
         this.oilTemp = oilTemp;
@@ -106,6 +108,7 @@ public class Passer {
         this.RPMBackground= RPMBackground;
         this.limpMode= limpMode;
     }
+
     public void setData(byte[] data) {
         this.data = data;
     }

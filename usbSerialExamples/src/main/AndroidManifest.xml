@@ -13,12 +13,6 @@
         android:theme="@style/AppTheme"
         android:hardwareAccelerated="true"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning">
-        <service android:name="org.eclipse.paho.android.service.MqttService" >
-        </service>
-        <!-- for this simple app launchMode=singleTask and singleTop have same effect.
-             If you would start another activity in the app, e.g. Android Settings
-             then you should use singleTask, else a new MainActivity would be started
-             when the settings activity is currently show+n -->
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
@@ -26,9 +20,6 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="stateHidden|adjustResize"
             android:exported="true">
-            android:windowSoftInputMode="stateHidden|adjustResize"
-            android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -40,5 +31,7 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
+        <service android:name="org.eclipse.paho.android.service.MqttService" >
+        </service>
     </application>
 </manifest>
