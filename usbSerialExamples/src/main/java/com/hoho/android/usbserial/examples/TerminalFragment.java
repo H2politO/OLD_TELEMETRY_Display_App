@@ -379,7 +379,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     //Attuazione->blu #0000FF
     @SuppressLint("DefaultLocale")
     private void receive(byte[] data) {
-        if (data.length > 0 ) {
+        if (!connected&&data.length > 0 ) {
             Message msg = Message.obtain();
             passers[threadCounter].setData(data);
             msg.obj = passers[threadCounter];

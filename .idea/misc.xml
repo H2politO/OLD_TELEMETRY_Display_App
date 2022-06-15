@@ -3,6 +3,8 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/alemo/AndroidStudioProjects/Display_App/usbSerialExamples/src/main/res/drawable/ic_delete_white_24dp.xml" value="0.115" />
+        <entry key="..\:/Users/alemo/AndroidStudioProjects/Display_App/usbSerialExamples/src/main/res/drawable/ic_send_white_24dp.xml" value="0.115" />
         <entry key="..\:/Users/alemo/AndroidStudioProjects/Display_App/usbSerialExamples/src/main/res/layout/device_list_item.xml" value="0.33" />
         <entry key="..\:/Users/alemo/AndroidStudioProjects/Display_App/usbSerialExamples/src/main/res/layout/layout_idra.xml" value="0.36666666666666664" />
         <entry key="..\:/Users/alemo/AndroidStudioProjects/new_usb/usbSerialExamples/src/main/res/drawable/ic_delete_white_24dp.xml" value="0.1365" />

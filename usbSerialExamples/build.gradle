@@ -9,7 +9,7 @@ android {
         resources.excludes.add("META-INF/*")
     }
     defaultConfig {
-        minSdkVersion 20
+        minSdkVersion 26
         targetSdkVersion 32
         vectorDrawables.useSupportLibrary = true
 

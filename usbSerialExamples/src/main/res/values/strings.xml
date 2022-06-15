@@ -13,6 +13,5 @@
     <string name="MotorOn">MO</string>
     <string name="ActuationOn">AO</string>
     <string name="temperature">0 c°</string>
-    <string name="strategy">ST: 45 </string>
-    <string name="st">ST:</string>
+    <string name="st">ST: 14</string>
 </resources>
