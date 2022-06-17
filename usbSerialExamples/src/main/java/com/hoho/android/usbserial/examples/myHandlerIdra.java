@@ -26,7 +26,6 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-@RequiresApi(api = Build.VERSION_CODES.O)
 public class myHandlerIdra extends Handler {
 
     private static final String EMERGENCY = "H2polito/Emergency";
@@ -47,7 +46,6 @@ public class myHandlerIdra extends Handler {
     private static final String PASSWORD = "H2display";
     private static final String USERNAME = "DisplayIdra";
 
-    NotificationChannel channel=new NotificationChannel("noConnectionNotification","noConnectionNotification", NotificationManager.IMPORTANCE_HIGH);
     myBoolean connected = new myBoolean(false);
 
     private MqttAndroidClient client;
@@ -58,9 +56,9 @@ public class myHandlerIdra extends Handler {
         int id;
         byte[] data;
         Passer passer;
-        Context context=(Context)msg.obj;
-        if (!connected.isState()) {
-            client = new MqttAndroidClient((Context) context, SERVERURI, CLIENTID);
+        if (msg.what == 0) {
+            Context context=(Context)msg.obj;
+            client = new MqttAndroidClient(context, SERVERURI, CLIENTID);
             try {
                 IMqttToken token = client.connect();
                 token.setActionCallback(new IMqttActionListener() {
@@ -72,7 +70,7 @@ public class myHandlerIdra extends Handler {
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                     //we are not connected
-                    Toast.makeText(context, "device wasn't abel to connect, i am working only as a display", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "device wasn't able to connect, i am working only as a display", Toast.LENGTH_SHORT).show();
                     connected.setState(false);
                 }
             });
@@ -88,7 +86,7 @@ public class myHandlerIdra extends Handler {
             id = byteToInt(data[0]);
         }
         switch (id) {
-            case 16://service board: emergences
+            case 16://service board: emergencies
                 boolean emActive = false;
                 StringBuilder emString = new StringBuilder();
                 boolean h2Emergency = false;

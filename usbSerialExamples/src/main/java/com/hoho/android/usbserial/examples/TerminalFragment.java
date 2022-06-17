@@ -36,6 +36,7 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
+import org.eclipse.paho.android.service.BuildConfig;
 import org.eclipse.paho.android.service.MqttAndroidClient;
 
 import java.io.IOException;
@@ -379,7 +380,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     //Attuazione->blu #0000FF
     @SuppressLint("DefaultLocale")
     private void receive(byte[] data) {
-        if (!connected&&data.length > 0 ) {
+        if (/*connected &&*/ data.length>0 ) {
             Message msg = Message.obtain();
             passers[threadCounter].setData(data);
             msg.obj = passers[threadCounter];

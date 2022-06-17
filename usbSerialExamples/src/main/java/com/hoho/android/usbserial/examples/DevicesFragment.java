@@ -30,7 +30,7 @@ import java.util.Locale;
 
 public class DevicesFragment extends ListFragment {
 
-    public static final int JUNO =1;
+    public static final int JUNO = 1;
     public static final int IDRA = 2;
 
     int  car;
@@ -49,7 +49,7 @@ public class DevicesFragment extends ListFragment {
 
     private final ArrayList<ListItem> listItems = new ArrayList<>();
     private ArrayAdapter<ListItem> listAdapter;
-    private int baudRate = 115200;//TODO: check for baud rate for different devices
+    private int baudRate = 115200;                      //TODO: check the baud rate for different devices
     private boolean withIoManager = true;
 
     @Override
