@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_title">Telelogger H2politO</string>
-    <string name="app_name">Telelogegr H2politO</string>
+    <string name="app_title">KASPER H2politO</string>
+    <string name="app_name">KASPER H2politO</string>
     <string name="devices">USB Devices</string>
     <string name="FuelCell">FC:0 V</string>
     <string name="SuperCap">SC: 0 V</string>
