@@ -382,7 +382,10 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     private void receive(byte[] data) {
         if (data.length>0 ) {
             Message msg = Message.obtain();
-            passers[threadCounter].setData(data);
+            byte[] data1 =new byte[data.length];
+            for(int i=0;i<data.length;i++)
+                data1[i]=data[i];
+            passers[threadCounter].setData(data1);
             msg.obj = passers[threadCounter];
             msg.what=1;
             if(car==IDRA)
