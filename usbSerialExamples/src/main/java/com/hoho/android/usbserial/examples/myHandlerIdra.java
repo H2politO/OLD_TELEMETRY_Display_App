@@ -47,7 +47,7 @@ public class myHandlerIdra extends Handler {
     private static final String USERNAME = "DisplayIdra";
 
     myBoolean connected = new myBoolean(false);
-
+    myBoolean network = new myBoolean(false);
     private MqttAndroidClient client;
 
     @SuppressLint("DefaultLocale")
@@ -84,6 +84,7 @@ public class myHandlerIdra extends Handler {
             passer = (Passer) msg.obj;
             data = passer.data;
             id = byteToInt(data[0]);
+            network.setState(passer.connected);
         }
         switch (id) {
             case 16://service board: emergencies
@@ -203,7 +204,7 @@ public class myHandlerIdra extends Handler {
     }
 
     private void publish(String topic, byte[] payload) {
-        if(!connected.isState()) return;
+        if(!connected.isState() && !network.isState()) return;
         try {
             MqttMessage message = new MqttMessage(payload);
             message.setQos(0);

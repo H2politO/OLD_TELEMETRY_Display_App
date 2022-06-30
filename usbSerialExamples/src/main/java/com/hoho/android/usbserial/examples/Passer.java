@@ -38,6 +38,7 @@ public class Passer {
     public TextView limpMode;
     public Handler handler;
     public TextView powerModeBackground;
+    public boolean connected;
 
     public Passer(TextView purge,
                   TextView _short,

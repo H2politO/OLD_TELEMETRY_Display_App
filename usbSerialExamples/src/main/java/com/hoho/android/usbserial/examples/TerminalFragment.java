@@ -1,5 +1,6 @@
 package com.hoho.android.usbserial.examples;
 
+import static androidx.core.content.ContextCompat.getSystemService;
 import static com.hoho.android.usbserial.examples.DevicesFragment.IDRA;
 import static com.hoho.android.usbserial.examples.DevicesFragment.JUNO;
 
@@ -13,6 +14,8 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -70,8 +73,6 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
 
     int threadCounter=0;
     Handler handler=new Handler(Looper.getMainLooper());
-
-    private MqttAndroidClient MQTTClient;
 
     private SerialInputOutputManager usbIoManager;
     private UsbSerialPort usbSerialPort;
@@ -380,12 +381,13 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
     //Attuazione->blu #0000FF
     @SuppressLint("DefaultLocale")
     private void receive(byte[] data) {
+        passers[threadCounter].connected=isOnline(this);
         if (data.length>0 ) {
             Message msg = Message.obtain();
             byte[] data1 =new byte[data.length];
             for(int i=0;i<data.length;i++)
                 data1[i]=data[i];
-            passers[threadCounter].setData(data1);
+            passers[threadCounter].data=data1;
             msg.obj = passers[threadCounter];
             msg.what=1;
             if(car==IDRA)
@@ -395,4 +397,15 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             threadCounter = (threadCounter + 1) % THREAD_NUMBER;
         }
     }
+
+    private boolean isOnline(TerminalFragment terminalFragment) {
+        ConnectivityManager cm = (ConnectivityManager) getContext().getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo wifi= cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        NetworkInfo mobile= cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+
+        return (wifi != null && wifi.isConnected()) || (mobile != null && mobile.isConnected());
+    }
+
+
 }
