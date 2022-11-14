@@ -1,33 +1,82 @@
 package com.hoho.android.usbserial.examples;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Message;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
+import java.nio.charset.StandardCharsets;
 
 
 public class myHandlerJuno extends Handler {
 
-    public static final String SERVERURI = "ciao";
-    public static final String CLIENTID="ciao";
-    private static final String PASSWORD = "password";
-    private static final String USERNAME = "DisplayIdra";
-    MqttAndroidClient client;
+    //sensor
+    private static final String EMERGENCES = "";
+    private static final String HMI = "";
+    private static final String ECU1 = ""; //RPM & TPS
+    private static final String ECU2 = ""; //Oil Temp & Lambda
+    private static final String ECU3 = ""; //Engine & Limp-->modalita centralina
+    private static final String ECU4 = ""; //Battery & Voltage
+    private static final String ECU5 = ""; //RunMode & SyncState
+    private static final String ECU6 = ""; //Speed
+
+    //Mqtt
+    public static final String SERVERURI = "tcp://broker.hivemq.com:1883";
+    public static final String CLIENTID= MqttClient.generateClientId();
+    private static final String PASSWORD = "H2display";
+    private static final String USERNAME = "DisplayJuno";
+
+    myBoolean connected = new myBoolean(false);
+    myBoolean network = new myBoolean(false);
+    private MqttAndroidClient client;
 
     @SuppressLint({"DefaultLocale", "SetTextI18n"})
     @Override
     public void handleMessage(@NonNull Message msg) {
-        Passer passer= (Passer) msg.obj;
-        int initialized=msg.what;
-        byte[] data= passer.data;
-        int id = byteToInt(data[0]);
-        if(initialized==0){
-            //modify constants defined on top
+        final Passer passer;
+        byte[] data;
+        int id ;
+        if(msg.what == 0){
+            //if msg 0, try to connect MqttServer
+            Context context = (Context) msg.obj;
+            client = new MqttAndroidClient(context, SERVERURI, CLIENTID);
+
+            try{
+                IMqttToken token = client.connect();
+                token.setActionCallback(new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        connected.setState(true);
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+
+                        Toast.makeText(context, "device wasn't able to connect, i am working only as a display", Toast.LENGTH_SHORT).show();
+                        connected.setState(false);
+                    }
+                });
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
             return;
+        }else{
+            //copy msg for work on it
+            passer = (Passer) msg.obj;
+            data = passer.data;
+            id = byteToInt(data[0]);
+            network.setState(passer.connected);
         }
         switch(id) {
             case 17://emergences fromm the safe board
@@ -79,7 +128,7 @@ public class myHandlerJuno extends Handler {
                 break;
 
             case 60://first batch of messages from ECU(1/2)
-                //first 2 bytes->RMP
+                //first 2 bytes->RPM
                 int RPM = byteToInt(data[1], data[2]);
                 passer.RPM.post(() -> passer.RPM.setText(String.format("%d RMP", RPM)));
                 if (RPM > 0 && RPM < 3500) {
@@ -162,7 +211,24 @@ public class myHandlerJuno extends Handler {
             default:
                 break;
         }
-        return;
+    }
+
+    public void publish(String topic, byte[] payload){
+        if(!connected.isState() && !network.isState())
+            return;
+        try{
+            MqttMessage message = new MqttMessage(payload);
+            message.setQos(0);
+            message.setRetained(true);
+            client.publish(topic, message);
+        }catch (MqttException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void publish(String topic, int payload){
+        byte[] data = String.valueOf(payload).getBytes(StandardCharsets.UTF_8);
+        publish(topic, data);
     }
 
     public int byteToInt(byte... data) {

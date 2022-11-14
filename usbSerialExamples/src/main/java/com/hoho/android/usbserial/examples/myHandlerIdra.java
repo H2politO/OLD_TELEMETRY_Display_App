@@ -57,7 +57,7 @@ public class myHandlerIdra extends Handler {
         byte[] data;
         Passer passer;
         if (msg.what == 0) {
-            Context context=(Context)msg.obj;
+            Context context= (Context) msg.obj;
             client = new MqttAndroidClient(context, SERVERURI, CLIENTID);
             try {
                 IMqttToken token = client.connect();
