@@ -16,20 +16,21 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 
 public class myHandlerJuno extends Handler {
 
     //sensor
-    private static final String EMERGENCES = "";
-    private static final String HMI = "";
-    private static final String ECU1 = ""; //RPM & TPS
-    private static final String ECU2 = ""; //Oil Temp & Lambda
-    private static final String ECU3 = ""; //Engine & Limp-->modalita centralina
-    private static final String ECU4 = ""; //Battery & Voltage
-    private static final String ECU5 = ""; //RunMode & SyncState
-    private static final String ECU6 = ""; //Speed
+    private static final String EMERGENCES = "H2polito/Juno/emergences";
+    private static final String HMI = "H2polito/Juno/Hmi";
+    private static final String ECU1 = "H2polito/Juno/Ecu1"; //RPM & TPS
+    private static final String ECU2 = "H2polito/Juno/Ecu2"; //Oil Temp & Lambda
+    private static final String ECU3 = "H2polito/Juno/Ecu3"; //Engine & Limp-->modalita centralina
+    private static final String ECU4 = "H2polito/Juno/Ecu4"; //Battery & Voltage
+    private static final String ECU5 = "H2polito/Juno/Ecu5"; //RunMode & SyncState
+    private static final String ECU6 = "H2polito/Juno/Ecu6"; //Speed
 
     //Mqtt
     public static final String SERVERURI = "tcp://broker.hivemq.com:1883";
@@ -77,16 +78,25 @@ public class myHandlerJuno extends Handler {
             data = passer.data;
             id = byteToInt(data[0]);
             network.setState(passer.connected);
+            StringBuilder strSend = new StringBuilder();
         }
         switch(id) {
-            case 17://emergences fromm the safe board
+            case 17://emergences from the safe board
+                StringBuilder strSend = new StringBuilder();
                 if(data[4]!=0) {
-                    if (data[3] == 2)
+                    if (data[3] == 2) {
                         passer.SOS.post(() -> passer.SOS.setText("Deadman"));
-                    else if (data[3] == 4)
+                        strSend.append("Deadman");
+                    }
+                    else if (data[3] == 4) {
                         passer.SOS.post(() -> passer.SOS.setText("External"));
-                    else if (data[3] == 8)
+                        strSend.append("External");
+                    }
+                    else if (data[3] == 8) {
                         passer.SOS.post(() -> passer.SOS.setText("Internal"));
+                        strSend.append("Internal");
+                    }
+                    publish(EMERGENCES, strSend.toString());
                 }
                 else
                     passer.SOS.post(() -> passer.SOS.setText("SOS"));
@@ -141,6 +151,8 @@ public class myHandlerJuno extends Handler {
                 //second 2 bytes->tps
                 float TPS = (float) (byteToInt(data[3], data[4]) / 81.92);
                 passer.TPS.post(() -> passer.TPS.setText(String.format("TPS: %.2f", TPS)));
+                publish(ECU1, RPM);
+                //altro canale per tps
                 break;
 
             case 61://first batch of messages from ECU(2/2)
@@ -160,6 +172,7 @@ public class myHandlerJuno extends Handler {
                     passer.lambdaBackground.post(() -> passer.lambdaBackground.setBackgroundColor(Color.parseColor("#344be0")));
                     passer.lambda.post(() -> passer.lambda.setTextColor(Color.parseColor("#000000")));
                 }
+                publish(ECU2, oilTemp);
                 break;
             case 62://second batch of messages from ECU(1/2)
                 //first 2 bytes -> limp mode
@@ -174,6 +187,7 @@ public class myHandlerJuno extends Handler {
                     passer.engineEnable.post(()->passer.engineEnable.setBackgroundColor(Color.parseColor("#af34e0")));
                 else
                     passer.engineEnable.post(()->passer.engineEnable.setBackgroundColor(Color.parseColor("#ad0c14")));
+                publish(ECU3, limpMode);
                 break;
 
             case 63://second batch of messages from ECU(2/2)
@@ -187,6 +201,7 @@ public class myHandlerJuno extends Handler {
                     passer.batteryVoltage.post(() -> passer.batteryVoltage.setBackgroundColor(Color.TRANSPARENT));
                     passer.batteryVoltage.post(()->passer.batteryVoltage.setTextColor(Color.parseColor("#FFFFFF")));
                 }
+                publish(ECU4, VBattery);
                 break;
             case 64://third batch of messages from ECU(1/2)
                 //first 2 bytes -> runMode
@@ -205,15 +220,17 @@ public class myHandlerJuno extends Handler {
 
             case 65://third batch of messages from ECU(2/2)
                 //third 2 bytes -> vehicle speed
-                double speed= byteToInt(data[5],data[6])*0.036;
+                float speed= (float) (byteToInt(data[5],data[6])*0.036);
+                //cast float per conversione
                 passer.speed.post(()->passer.speed.setText(String.format("%.2f Km/h ",speed)));
+                publish(ECU6, speed);
                 break;
             default:
                 break;
         }
     }
 
-    public void publish(String topic, byte[] payload){
+    private void publish(String topic, byte[] payload){
         if(!connected.isState() && !network.isState())
             return;
         try{
@@ -226,8 +243,18 @@ public class myHandlerJuno extends Handler {
         }
     }
 
-    public void publish(String topic, int payload){
+    private void publish(String topic, int payload){
         byte[] data = String.valueOf(payload).getBytes(StandardCharsets.UTF_8);
+        publish(topic, data);
+    }
+
+    private void publish(String topic, float payload){
+        byte[] data = String.valueOf(payload).getBytes(StandardCharsets.UTF_8);
+        publish(topic, data);
+    }
+
+    private void publish(String topic, String payload){
+        byte[] data = payload.getBytes(StandardCharsets.UTF_8);
         publish(topic, data);
     }
 
@@ -238,6 +265,10 @@ public class myHandlerJuno extends Handler {
             val = val | (datum & 0xFF);
         }
         return val;
+    }
+
+    public float byteToFloat(byte... data){
+        return ByteBuffer.wrap(data).getFloat();
     }
 
     public int  getBit(int position, byte val)

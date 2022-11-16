@@ -28,18 +28,18 @@ import java.nio.charset.StandardCharsets;
 
 public class myHandlerIdra extends Handler {
 
-    private static final String EMERGENCY = "H2polito/Emergency";
-    private static final String SPEED = "H2polito/Speed";
-    private static final String TEMPERATURE = "H2polito/Temperature";
-    private static final String FC_VOLTAGE = "H2polito/FCVoltage";
-    private static final String SC_VOLTAGE = "H2polito/SCVoltage";
-    private static final String STRATEGY = "H2polito/Strategy";
-    private static final String MOTOR_ON = "H2polito/MotorOn";
-    private static final String ACTUATION_ON = "H2polito/ActuationOn";
-    private static final String PURGE = "H2polito/Purge";
-    private static final String POWER_MODE = "H2polito/PowerMode";
-    private static final String SHORT = "H2polito/Short";
-    private static final String FC_CURRENT = "H2polito/FCCurrent";
+    private static final String EMERGENCY = "H2polito/Idra/Emergency";
+    private static final String SPEED = "H2polito/Idra/Speed";
+    private static final String TEMPERATURE = "H2polito/Idra/Temperature";
+    private static final String FC_VOLTAGE = "H2polito/Idra/FCVoltage";
+    private static final String SC_VOLTAGE = "H2polito/Idra/SCVoltage";
+    private static final String STRATEGY = "H2polito/Idra/Strategy";
+    private static final String MOTOR_ON = "H2polito/Idra/MotorOn";
+    private static final String ACTUATION_ON = "H2polito/Idra/ActuationOn";
+    private static final String PURGE = "H2polito/Idra/Purge";
+    private static final String POWER_MODE = "H2polito/Idra/PowerMode";
+    private static final String SHORT = "H2polito/Idra/Short";
+    private static final String FC_CURRENT = "H2polito/Idra/FCCurrent";
 
     public static final String SERVERURI = "tcp://broker.hivemq.com:1883";
     public static final String CLIENTID = MqttClient.generateClientId();
@@ -105,7 +105,7 @@ public class myHandlerIdra extends Handler {
                                 emString.append("External ");
                                 break;
                             case 4:
-                                emString.append("Internal");
+                                emString.append("Internal ");
                                 break;
                         }
                         emActive = true;
