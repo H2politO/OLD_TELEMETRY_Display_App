@@ -7,7 +7,7 @@ import android.os.Looper;
 
 public class JunoThread extends Thread{
 
-    public Handler handler;
+    public Handler handler = new myHandlerJuno();
     public Looper looper;
 
     @Override
@@ -15,8 +15,6 @@ public class JunoThread extends Thread{
         Looper.prepare();
 
         looper=Looper.myLooper();
-
-        handler=new myHandlerJuno();
 
         Looper.loop();
     }

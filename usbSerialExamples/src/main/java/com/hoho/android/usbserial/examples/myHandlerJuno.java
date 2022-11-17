@@ -45,7 +45,7 @@ public class myHandlerJuno extends Handler {
     @SuppressLint({"DefaultLocale", "SetTextI18n"})
     @Override
     public void handleMessage(@NonNull Message msg) {
-        final Passer passer;
+        Passer passer;
         byte[] data;
         int id ;
         if(msg.what == 0){
@@ -78,7 +78,6 @@ public class myHandlerJuno extends Handler {
             data = passer.data;
             id = byteToInt(data[0]);
             network.setState(passer.connected);
-            StringBuilder strSend = new StringBuilder();
         }
         switch(id) {
             case 17://emergences from the safe board
@@ -98,8 +97,10 @@ public class myHandlerJuno extends Handler {
                     }
                     publish(EMERGENCES, strSend.toString());
                 }
-                else
+                else {
                     passer.SOS.post(() -> passer.SOS.setText("SOS"));
+                    publish(EMERGENCES, "SOS");
+                }
                 break;
 
             case 49://HMI

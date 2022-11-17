@@ -114,6 +114,7 @@ public class TerminalFragment extends Fragment implements SerialInputOutputManag
             if(car==JUNO) {
                 junoThreads[i] = new JunoThread();
                 junoThreads[i].start();
+                junoThreads[i].handler.sendMessage(msg);
             }else {
                 idraThreads[i] = new IdraThread();
                 idraThreads[i].start();
